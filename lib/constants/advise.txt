@@ -1,2 +1,0 @@
-//You can create separate constants based on use case
-// use this folder to define constants
