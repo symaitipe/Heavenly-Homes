@@ -40,10 +40,10 @@ class _GetStartedPageState extends State<GetStartedPage> {
               ),
               const SizedBox(height: 10),
               const Text(
-                'Make your dream come true',
+                'Make your dream come true...',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.white70,
+                  color: Colors.amber,
                 ),
               ),
               const Spacer(),
@@ -54,7 +54,7 @@ class _GetStartedPageState extends State<GetStartedPage> {
                     Navigator.pushReplacementNamed(context, '/intro');
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD4AF37),
+                    backgroundColor: const Color(0xFFFFFFFF),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 40,
                       vertical: 15,
