@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:heavenly_homes/screens/authenticates/login.dart';
 import 'package:heavenly_homes/screens/pages/home.dart';
-import 'package:heavenly_homes/screens/spalshs/get_started_screen.dart';
-import 'package:heavenly_homes/screens/spalshs/intro.dart';
-import 'package:heavenly_homes/screens/spalshs/splash_screen.dart';
+import 'package:heavenly_homes/screens/splashes/get_started_screen.dart';
+import 'package:heavenly_homes/screens/splashes/intro.dart';
+import 'package:heavenly_homes/screens/splashes/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
