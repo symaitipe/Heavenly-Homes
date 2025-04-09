@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:heavenly_homes/services/auth_services.dart';
+
+import '../../model/user_model.dart';
+import '../../services/auth_services.dart';
 
 
 class HomePage extends StatelessWidget {
@@ -8,7 +9,9 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    // Retrieve the UserModel from route arguments
+    final UserModel userModel = ModalRoute.of(context)!.settings.arguments as UserModel;
+    final AuthServices authServices = AuthServices();
 
     return Scaffold(
       appBar: AppBar(
@@ -16,7 +19,10 @@ class HomePage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: ()=> signOut(context)
+            onPressed: () async {
+              await authServices.signOut();
+              Navigator.pushReplacementNamed(context, '/login');
+            },
           ),
         ],
       ),
@@ -25,15 +31,20 @@ class HomePage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Welcome, ${user?.displayName ?? 'User'}!',
+              'Welcome, ${userModel.displayName ?? 'User'}!',
               style: const TextStyle(fontSize: 24),
             ),
             const SizedBox(height: 10),
-            if (user?.photoURL != null)
+            if (userModel.photoUrl != null)
               CircleAvatar(
-                backgroundImage: NetworkImage(user!.photoURL!),
+                backgroundImage: NetworkImage(userModel.photoUrl!),
                 radius: 40,
               ),
+            const SizedBox(height: 10),
+            Text(
+              'Email: ${userModel.email ?? 'Not provided'}',
+              style: const TextStyle(fontSize: 16),
+            ),
           ],
         ),
       ),
