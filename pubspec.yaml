@@ -41,6 +41,7 @@ dependencies:
   go_router: ^14.8.1
   shared_preferences: ^2.5.3
   flutter_native_splash: ^2.4.6
+  cloud_firestore: ^5.6.6
 
 dev_dependencies:
   flutter_test:
@@ -67,6 +68,8 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/logos/
+    - assets/interior_designs/
+
 
 
   # An image asset can refer to one or more resolution-specific "variants", see
