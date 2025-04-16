@@ -1,5 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../model/decoration_items.dart';
+import 'order_details.dart';
+
 
 class ItemDetailPage extends StatefulWidget {
   final DecorationItem item;
@@ -135,7 +138,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'RS.${widget.item.price.toStringAsFixed(2)}',
+                    '₹${widget.item.price.toStringAsFixed(2)}',
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
                   ),
                   const SizedBox(height: 16),
@@ -180,7 +183,28 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
             Expanded(
               child: ElevatedButton(
                 onPressed: () {
-                  // Implement Buy Now functionality (future enhancement)
+                  // Get the current user ID
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user == null) {
+                    // If user is not logged in, redirect to login
+                    Navigator.pushReplacementNamed(context, '/login');
+                    return;
+                  }
+
+                  // Generate a unique order ID (using timestamp for simplicity)
+                  final orderId = DateTime.now().millisecondsSinceEpoch.toString();
+
+                  // Navigate to OrderDetailPage
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => OrderDetailPage(
+                        item: widget.item,
+                        orderId: orderId,
+                        userId: user.uid,
+                      ),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.yellow,
