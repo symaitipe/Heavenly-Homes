@@ -1,8 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../model/decoration_items.dart';
 import 'order_details.dart';
-
 
 class ItemDetailPage extends StatefulWidget {
   final DecorationItem item;
@@ -20,6 +20,20 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
   void initState() {
     super.initState();
     _selectedImageUrl = widget.item.imageUrl;
+  }
+
+  // Check available quantity before proceeding to Buy Now
+  Future<bool> _checkAvailableQuantity() async {
+    final doc = await FirebaseFirestore.instance
+        .collection('decoration_items')
+        .doc(widget.item.id)
+        .get();
+    if (doc.exists) {
+      final data = doc.data();
+      final availableQty = (data?['available_qty'] as num?)?.toInt() ?? 0;
+      return availableQty > 0;
+    }
+    return false;
   }
 
   @override
@@ -138,7 +152,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '₹${widget.item.price.toStringAsFixed(2)}',
+                    'Rs ${widget.item.price.toStringAsFixed(2)}',
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
                   ),
                   const SizedBox(height: 16),
@@ -182,7 +196,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
             const SizedBox(width: 16),
             Expanded(
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   // Get the current user ID
                   final user = FirebaseAuth.instance.currentUser;
                   if (user == null) {
@@ -191,20 +205,44 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
                     return;
                   }
 
+                  // Check available quantity
+                  bool hasStock = await _checkAvailableQuantity();
+                  if (!hasStock) {
+                    // Show alert if out of stock
+                    if (context.mounted) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Out of Stock'),
+                          content: const Text('Sorry, this item is currently out of stock.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return;
+                  }
+
                   // Generate a unique order ID (using timestamp for simplicity)
                   final orderId = DateTime.now().millisecondsSinceEpoch.toString();
 
                   // Navigate to OrderDetailPage
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => OrderDetailPage(
-                        item: widget.item,
-                        orderId: orderId,
-                        userId: user.uid,
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => OrderDetailPage(
+                          item: widget.item,
+                          orderId: orderId,
+                          userId: user.uid,
+                        ),
                       ),
-                    ),
-                  );
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.yellow,

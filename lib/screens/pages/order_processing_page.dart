@@ -5,6 +5,7 @@ class OrderProcessingPage extends StatelessWidget {
   final DecorationItem item;
   final String orderId;
   final String userId;
+  final int checkoutQty;
   final double deliveryCharges;
   final double subtotal;
 
@@ -13,6 +14,7 @@ class OrderProcessingPage extends StatelessWidget {
     required this.item,
     required this.orderId,
     required this.userId,
+    required this.checkoutQty,
     required this.deliveryCharges,
     required this.subtotal,
   });
@@ -67,31 +69,18 @@ class OrderProcessingPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Living Area',
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
-                        ),
-                        const SizedBox(height: 4),
                         Text(
                           item.name,
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Warranty: 2 years',
-                          style: TextStyle(fontSize: 14, color: Colors.grey),
-                        ),
-                        const Text(
-                          'Quantity: 1 item',
-                          style: TextStyle(fontSize: 14, color: Colors.grey),
-                        ),
-                        const Text(
-                          'Estimated Delivery: Aug 20-25',
-                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                        Text(
+                          'Quantity: $checkoutQty item${checkoutQty > 1 ? 's' : ''}',
+                          style: const TextStyle(fontSize: 14, color: Colors.grey),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '₹${item.price.toStringAsFixed(2)}',
+                          'Rs ${(item.price * checkoutQty).toStringAsFixed(2)}',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -115,9 +104,9 @@ class OrderProcessingPage extends StatelessWidget {
                   const SizedBox(height: 8),
                   _buildSummaryRow('Item ID', item.id),
                   const SizedBox(height: 8),
-                  _buildSummaryRow('Delivery Charges', '₹${deliveryCharges.toStringAsFixed(2)}'),
+                  _buildSummaryRow('Delivery Charges', 'Rs ${deliveryCharges.toStringAsFixed(2)}'),
                   const SizedBox(height: 8),
-                  _buildSummaryRow('Sub total', '₹${subtotal.toStringAsFixed(2)}', isBold: true),
+                  _buildSummaryRow('Sub total', 'Rs ${subtotal.toStringAsFixed(2)}', isBold: true),
                 ],
               ),
             ),

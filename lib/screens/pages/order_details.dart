@@ -1,8 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../model/decoration_items.dart';
 import 'checkout_page.dart';
 
-class OrderDetailPage extends StatelessWidget {
+class OrderDetailPage extends StatefulWidget {
   final DecorationItem item;
   final String orderId;
   final String userId;
@@ -15,9 +16,80 @@ class OrderDetailPage extends StatelessWidget {
   });
 
   @override
+  State<OrderDetailPage> createState() => _OrderDetailPageState();
+}
+
+class _OrderDetailPageState extends State<OrderDetailPage> {
+  int _checkoutQty = 1;
+  int _availableQty = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAvailableQuantity();
+  }
+
+  // Fetch the available quantity from Firestore
+  Future<void> _fetchAvailableQuantity() async {
+    final doc = await FirebaseFirestore.instance
+        .collection('decoration_items')
+        .doc(widget.item.id)
+        .get();
+    if (doc.exists) {
+      final data = doc.data();
+      setState(() {
+        _availableQty = (data?['available_qty'] as num?)?.toInt() ?? 0;
+      });
+    }
+  }
+
+  // Update the checkout quantity
+  void _updateQuantity(int change) {
+    setState(() {
+      int newQty = _checkoutQty + change;
+      if (newQty <= 0) {
+        // Prevent quantity from going below 1
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Invalid Quantity'),
+            content: const Text('Quantity must be at least 1.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+      if (newQty > _availableQty) {
+        // Prevent exceeding available quantity
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Quantity Exceeded'),
+            content: Text('Only $_availableQty items are available.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+      _checkoutQty = newQty;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     const double deliveryCharges = 35000.0;
-    final double subtotal = item.price + deliveryCharges;
+    final double itemTotal = widget.item.price * _checkoutQty;
+    final double subtotal = itemTotal + deliveryCharges;
 
     return Scaffold(
       appBar: AppBar(
@@ -54,7 +126,7 @@ class OrderDetailPage extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.asset(
-                      item.imageUrl,
+                      widget.item.imageUrl,
                       width: 100,
                       height: 100,
                       fit: BoxFit.cover,
@@ -67,31 +139,36 @@ class OrderDetailPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Living Area',
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
-                        ),
-                        const SizedBox(height: 4),
                         Text(
-                          item.name,
+                          widget.item.name,
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
+
                         const SizedBox(height: 4),
-                        const Text(
-                          'Warranty: 2 years',
-                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                        Row(
+                          children: [
+                            const Text(
+                              'Quantity: ',
+                              style: TextStyle(fontSize: 14, color: Colors.grey),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.remove),
+                              onPressed: () => _updateQuantity(-1),
+                            ),
+                            Text(
+                              '$_checkoutQty',
+                              style: const TextStyle(fontSize: 14, color: Colors.grey),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.add),
+                              onPressed: () => _updateQuantity(1),
+                            ),
+                          ],
                         ),
-                        const Text(
-                          'Quantity: 1 item',
-                          style: TextStyle(fontSize: 14, color: Colors.grey),
-                        ),
-                        const Text(
-                          'Estimated Delivery: Aug 20-25',
-                          style: TextStyle(fontSize: 14, color: Colors.grey),
-                        ),
+
                         const SizedBox(height: 8),
                         Text(
-                          '₹${item.price.toStringAsFixed(2)}',
+                          'Rs ${itemTotal.toStringAsFixed(2)}',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -111,13 +188,13 @@ class OrderDetailPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSummaryRow('Order ID', orderId),
+                  _buildSummaryRow('Order ID', widget.orderId),
                   const SizedBox(height: 8),
-                  _buildSummaryRow('Item ID', item.id),
+                  _buildSummaryRow('Item ID', widget.item.id),
                   const SizedBox(height: 8),
-                  _buildSummaryRow('Delivery Charges', '₹${deliveryCharges.toStringAsFixed(2)}'),
+                  _buildSummaryRow('Delivery Charges', 'Rs ${deliveryCharges.toStringAsFixed(2)}'),
                   const SizedBox(height: 8),
-                  _buildSummaryRow('Sub total', '₹${subtotal.toStringAsFixed(2)}', isBold: true),
+                  _buildSummaryRow('Sub total', 'Rs ${subtotal.toStringAsFixed(2)}', isBold: true),
                 ],
               ),
             ),
@@ -148,14 +225,15 @@ class OrderDetailPage extends StatelessWidget {
             Expanded(
               child: ElevatedButton(
                 onPressed: () {
-                  // Navigate to CheckoutPage
+                  // Navigate to CheckoutPage with the selected quantity
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => CheckoutPage(
-                        item: item,
-                        orderId: orderId,
-                        userId: userId,
+                        item: widget.item,
+                        orderId: widget.orderId,
+                        userId: widget.userId,
+                        checkoutQty: _checkoutQty, // Pass the checkout quantity
                         deliveryCharges: deliveryCharges,
                         subtotal: subtotal,
                       ),

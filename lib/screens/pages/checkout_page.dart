@@ -7,6 +7,7 @@ class CheckoutPage extends StatefulWidget {
   final DecorationItem item;
   final String orderId;
   final String userId;
+  final int checkoutQty;
   final double deliveryCharges;
   final double subtotal;
 
@@ -15,6 +16,7 @@ class CheckoutPage extends StatefulWidget {
     required this.item,
     required this.orderId,
     required this.userId,
+    required this.checkoutQty,
     required this.deliveryCharges,
     required this.subtotal,
   });
@@ -25,22 +27,44 @@ class CheckoutPage extends StatefulWidget {
 
 class _CheckoutPageState extends State<CheckoutPage> {
   String _selectedPaymentMethod = 'Cash on Delivery';
+  final TextEditingController _addressController = TextEditingController();
 
-  // Save the order to Firestore
-  Future<void> _saveOrder() async {
+  @override
+  void initState() {
+    super.initState();
+    _addressController.text = "";
+  }
+
+  @override
+  void dispose() {
+    _addressController.dispose();
+    super.dispose();
+  }
+
+  // Save the order to Firestore and update available quantity
+  Future<void> _saveOrderAndUpdateQuantity() async {
+    // Save the order
     await FirebaseFirestore.instance.collection('orders').doc(widget.orderId).set({
       'orderId': widget.orderId,
       'itemId': widget.item.id,
       'itemName': widget.item.name,
       'itemPrice': widget.item.price,
-      'quantity': 1,
+      'quantity': widget.checkoutQty,
       'deliveryCharges': widget.deliveryCharges,
       'subtotal': widget.subtotal,
       'status': 'Processing',
       'userId': widget.userId,
-      'address': '71/3 Koswattagoda Road',
+      'address': _addressController.text,
       'paymentMethod': _selectedPaymentMethod,
       'createdAt': Timestamp.now(),
+    });
+
+    // Update the available quantity in Firestore
+    await FirebaseFirestore.instance
+        .collection('decoration_items')
+        .doc(widget.item.id)
+        .update({
+      'available_qty': FieldValue.increment(-widget.checkoutQty),
     });
   }
 
@@ -68,22 +92,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
+              TextFormField(
+                controller: _addressController,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  hintText: 'Enter your delivery address',
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '71/3 Koswattagoda Road',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                    Icon(Icons.arrow_drop_down),
-                  ],
-                ),
+                maxLines: 2,
               ),
               const SizedBox(height: 16),
               // Payment Method
@@ -110,16 +127,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ),
                 child: Column(
                   children: [
-                    _buildSummaryRow('Item', '₹${widget.item.price.toStringAsFixed(2)}'),
+                    _buildSummaryRow('Item (${widget.checkoutQty} x Rs ${widget.item.price.toStringAsFixed(2)})', 'Rs ${(widget.item.price * widget.checkoutQty).toStringAsFixed(2)}'),
                     const SizedBox(height: 8),
-                    _buildSummaryRow('Delivery Charge', '₹${widget.deliveryCharges.toStringAsFixed(2)}'),
+                    _buildSummaryRow('Delivery Charge', 'Rs ${widget.deliveryCharges.toStringAsFixed(2)}'),
                     const SizedBox(height: 8),
                     _buildSummaryRow('Promotion', 'Not Available', valueColor: Colors.grey),
                     const SizedBox(height: 8),
                     const Divider(),
                     _buildSummaryRow(
                       'Total',
-                      '₹${widget.subtotal.toStringAsFixed(2)}',
+                      'Rs ${widget.subtotal.toStringAsFixed(2)}',
                       isBold: true,
                     ),
                   ],
@@ -133,8 +150,27 @@ class _CheckoutPageState extends State<CheckoutPage> {
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
           onPressed: () async {
-            // Simulate payment and save the order
-            await _saveOrder();
+            if (_addressController.text.isEmpty) {
+              // Show alert if address is empty
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Address Required'),
+                  content: const Text('Please enter a delivery address.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+              return;
+            }
+
+            // Simulate payment, save the order, and update quantity
+            await _saveOrderAndUpdateQuantity();
+
             // Navigate to OrderProcessingPage
             if (context.mounted) {
               Navigator.pushReplacement(
@@ -144,6 +180,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     item: widget.item,
                     orderId: widget.orderId,
                     userId: widget.userId,
+                    checkoutQty: widget.checkoutQty, // Pass the checkout quantity
                     deliveryCharges: widget.deliveryCharges,
                     subtotal: widget.subtotal,
                   ),
