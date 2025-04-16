@@ -2,9 +2,11 @@
 class Assets {
   Assets._();
 
+  static const String interiorDesignsTvLobby = 'assets/interior_designs/tv-lobby.jpg';
   static const String logosAppLogo = 'assets/logos/app-logo.jpg';
   static const String logosDreamHouse = 'assets/logos/dream-house.jpg';
   static const String logosFacebookImage = 'assets/logos/facebook-image.png';
   static const String logosGoogleImage = 'assets/logos/google-image.jpg';
+  static const String p1P1SubImage1 = 'assets/decoration-items/living-area/p1/p1-sub-image1.png';
 
 }

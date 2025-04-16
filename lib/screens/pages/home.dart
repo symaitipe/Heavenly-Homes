@@ -5,7 +5,8 @@ import '../../model/decoration_items.dart';
 import '../../model/interior_design.dart';
 import '../../model/user_model.dart';
 import '../../services/auth_services.dart';
-
+import 'item_details.dart';
+// Import the ItemDetailPage
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -39,7 +40,7 @@ class _HomePageState extends State<HomePage> {
     // Fetch decoration items
     final itemSnapshot = await FirebaseFirestore.instance.collection('decoration_items').get();
     final allItems = itemSnapshot.docs
-        .map((doc) => DecorationItem.fromFirestore(doc.data()))
+        .map((doc) => DecorationItem.fromFirestore(doc.data(), doc.id)) // Pass the document ID
         .toList();
     allItems.shuffle();
     setState(() {
@@ -78,7 +79,7 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.logout),
             onPressed: () async {
               await authServices.signOut();
-              if(context.mounted){
+              if (context.mounted) {
                 Navigator.pushReplacementNamed(context, '/login');
               }
             },
@@ -148,9 +149,12 @@ class _HomePageState extends State<HomePage> {
                   ),
                   TextButton(
                     onPressed: () {
-                      // ****** Navigate to a page showing all designs (implement later)
+                      // Navigate to a page showing all designs (implement later)
                     },
-                    child: const Text('View All'),
+                    child: const Text(
+                      'View All',
+                      style: TextStyle(color: Colors.blue), // Match screenshot
+                    ),
                   ),
                 ],
               ),
@@ -167,24 +171,36 @@ class _HomePageState extends State<HomePage> {
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
                     child: Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12), // Add rounded corners
+                      ),
+                      elevation: 2, // Add elevation for depth
                       child: SizedBox(
                         width: 110,
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center, // Center content
                           children: [
                             Expanded(
-                              child: Image.asset(
-                                design.imageUrl,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                const Icon(Icons.broken_image, size: 50),
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(12), // Round top corners of image
+                                ),
+                                child: Image.asset(
+                                  design.imageUrl,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(Icons.broken_image, size: 50),
+                                ),
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.all(8.0),
+                              padding: const EdgeInsets.fromLTRB(8, 4, 8, 2),
                               child: Text(
                                 design.type,
                                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                textAlign: TextAlign.center, // Center text
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             Padding(
@@ -192,13 +208,17 @@ class _HomePageState extends State<HomePage> {
                               child: Text(
                                 design.budget,
                                 style: const TextStyle(fontSize: 12),
+                                textAlign: TextAlign.center, // Center text
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2),
                               child: Text(
                                 'By ${design.designer}',
                                 style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                textAlign: TextAlign.center, // Center text
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -209,7 +229,6 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
             ),
-
             //------------------------------------ Decoration Items Section -----------------------------
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -222,9 +241,12 @@ class _HomePageState extends State<HomePage> {
                   ),
                   TextButton(
                     onPressed: () {
-                      // ****** Navigate to a page showing all designs (implement later)
+                      // Navigate to a page showing all items (implement later)
                     },
-                    child: const Text('View All'),
+                    child: const Text(
+                      'View All',
+                      style: TextStyle(color: Colors.blue), // Match screenshot
+                    ),
                   ),
                 ],
               ),
@@ -234,43 +256,67 @@ class _HomePageState extends State<HomePage> {
                 : GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16,0,16,16),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
-                childAspectRatio: 0.7,
+                childAspectRatio: 0.7, // Keep the original aspect ratio (no overflow)
               ),
               itemCount: _selectedItems.length,
               itemBuilder: (context, index) {
                 final item = _selectedItems[index];
-                return Card(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Image.asset(
-                          item.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.broken_image, size: 50),
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => ItemDetailPage(item: item),
+                    ),
+                    );
+                  },
+                  child: Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12), // Add rounded corners
+                    ),
+                    elevation: 2, // Add elevation for depth
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center, // Center content
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(12), // Round top corners of image
+                            ),
+                            child: Image.asset(
+                              item.imageUrl,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.broken_image, size: 50),
+                            ),
+                          ),
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          item.name,
-                          style: const TextStyle(fontSize: 14),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 4, 8, 2),
+                          child: Text(
+                            item.name,
+                            style: const TextStyle(fontSize: 14),
+                            textAlign: TextAlign.center, // Center text
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text(
-                          '₹${item.price}',
-                          style: const TextStyle(fontSize: 12),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2),
+                          child: Text(
+                            '₹${item.price.toStringAsFixed(2)}', // Format price with 2 decimal places
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center, // Center text
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               },
