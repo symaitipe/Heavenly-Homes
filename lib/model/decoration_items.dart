@@ -8,7 +8,8 @@ class DecorationItem {
   final double rating;
   final int reviewCount;
   final String description;
-  final int availableQty; // New field for available quantity
+  final int availableQty;
+  final String category;
 
   DecorationItem({
     required this.id,
@@ -21,6 +22,7 @@ class DecorationItem {
     required this.reviewCount,
     required this.description,
     required this.availableQty,
+    required this.category,
   });
 
   factory DecorationItem.fromFirestore(Map<String, dynamic> data, [String? id]) {
@@ -34,7 +36,8 @@ class DecorationItem {
       rating: (data['rating'] as num?)?.toDouble() ?? 0.0,
       reviewCount: (data['reviewCount'] as num?)?.toInt() ?? 0,
       description: data['description'] ?? 'No description available',
-      availableQty: (data['available_qty'] as num?)?.toInt() ?? 0, // Parse available_qty
+      availableQty: (data['available_qty'] as num?)?.toInt() ?? 0,
+      category: data['category'] ?? 'Uncategorized',
     );
   }
 
@@ -50,6 +53,7 @@ class DecorationItem {
       'reviewCount': reviewCount,
       'description': description,
       'available_qty': availableQty,
+      'category': category,
     };
   }
 }

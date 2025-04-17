@@ -108,7 +108,7 @@ class _HomePageState extends State<HomePage> {
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
-                'PREMIUM DESIGNS FOR YOUR HOME',
+                'All Categories',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
@@ -153,7 +153,7 @@ class _HomePageState extends State<HomePage> {
                     },
                     child: const Text(
                       'View All',
-                      style: TextStyle(color: Colors.blue), // Match screenshot
+                      style: TextStyle(color: Colors.blue),
                     ),
                   ),
                 ],
@@ -172,18 +172,18 @@ class _HomePageState extends State<HomePage> {
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
                     child: Card(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12), // Add rounded corners
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      elevation: 2, // Add elevation for depth
+                      elevation: 2,
                       child: SizedBox(
                         width: 110,
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center, // Center content
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Expanded(
                               child: ClipRRect(
                                 borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(12), // Round top corners of image
+                                  top: Radius.circular(12),
                                 ),
                                 child: Image.asset(
                                   design.imageUrl,
@@ -241,11 +241,11 @@ class _HomePageState extends State<HomePage> {
                   ),
                   TextButton(
                     onPressed: () {
-                      // Navigate to a page showing all items (implement later)
+                      Navigator.pushNamed(context, '/category_selection');
                     },
                     child: const Text(
                       'View All',
-                      style: TextStyle(color: Colors.blue), // Match screenshot
+                      style: TextStyle(color: Colors.blue),
                     ),
                   ),
                 ],
@@ -261,7 +261,7 @@ class _HomePageState extends State<HomePage> {
                 crossAxisCount: 3,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
-                childAspectRatio: 0.7, // Keep the original aspect ratio (no overflow)
+                childAspectRatio: 0.7,
               ),
               itemCount: _selectedItems.length,
               itemBuilder: (context, index) {
@@ -277,16 +277,16 @@ class _HomePageState extends State<HomePage> {
                   },
                   child: Card(
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12), // Add rounded corners
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 2, // Add elevation for depth
+                    elevation: 2,
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center, // Center content
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: ClipRRect(
                             borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(12), // Round top corners of image
+                              top: Radius.circular(12),
                             ),
                             child: Image.asset(
                               item.imageUrl,
@@ -309,7 +309,7 @@ class _HomePageState extends State<HomePage> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2),
                           child: Text(
-                            '₹${item.price.toStringAsFixed(2)}', // Format price with 2 decimal places
+                            'Rs ${item.price.toStringAsFixed(2)}',
                             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                             textAlign: TextAlign.center, // Center text
                             overflow: TextOverflow.ellipsis,
