@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:heavenly_homes/screens/authenticates/login.dart';
 import 'package:heavenly_homes/screens/pages/best_bids.dart';
+import 'package:heavenly_homes/screens/pages/cart.dart';
 import 'package:heavenly_homes/screens/pages/category_selection.dart';
 import 'package:heavenly_homes/screens/pages/designer_details.dart';
 import 'package:heavenly_homes/screens/pages/home.dart';
@@ -41,6 +42,7 @@ class MyApp extends StatelessWidget {
         '/designer_details': (context) => const DesignerDetailsPage(),
         '/category_selection': (context) => const CategorySelectionPage(),
         '/best_bids': (context) => const BestBidsPage(),
+        '/cart': (context) => const CartPage(),
       },
     );
   }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../model/decoration_items.dart';
 import 'item_details.dart';
+
 
 class CategoryItemsPage extends StatefulWidget {
   final String categoryName;
@@ -27,11 +29,109 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
         .collection('decoration_items')
         .where('category', isEqualTo: widget.categoryName)
         .get();
-    setState(() {
-      _items = snapshot.docs
-          .map((doc) => DecorationItem.fromFirestore(doc.data(), doc.id))
-          .toList();
-    });
+    if (mounted) {
+      setState(() {
+        _items = snapshot.docs
+            .map((doc) => DecorationItem.fromFirestore(doc.data(), doc.id))
+            .toList();
+      });
+    }
+  }
+
+  // Add item to cart
+  Future<void> _addToCart(DecorationItem item) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      // If user is not logged in, redirect to login
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+      return;
+    }
+
+    // Check available quantity
+    final itemDoc = await FirebaseFirestore.instance
+        .collection('decoration_items')
+        .doc(item.id)
+        .get();
+    final availableQty = (itemDoc.data()?['available_qty'] as num?)?.toInt() ?? 0;
+
+    if (availableQty <= 0) {
+      // Show alert if out of stock
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Out of Stock'),
+            content: const Text('Sorry, this item is currently out of stock.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+
+    // Check if item already exists in cart
+    final cartQuery = await FirebaseFirestore.instance
+        .collection('cart')
+        .where('userId', isEqualTo: user.uid)
+        .where('decorationItemId', isEqualTo: item.id)
+        .get();
+
+    if (cartQuery.docs.isNotEmpty) {
+      // Item already in cart, increment quantity if possible
+      final cartItem = cartQuery.docs.first;
+      final currentQuantity = (cartItem.data()['quantity'] as num?)?.toInt() ?? 1;
+      if (currentQuantity >= availableQty) {
+        // Show alert if max quantity reached
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Maximum Quantity Reached'),
+              content: const Text('You have reached the maximum available quantity for this item.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+      // Increment quantity
+      await FirebaseFirestore.instance
+          .collection('cart')
+          .doc(cartItem.id)
+          .update({'quantity': currentQuantity + 1});
+    } else {
+      // Add new item to cart
+      await FirebaseFirestore.instance.collection('cart').add({
+        'userId': user.uid,
+        'decorationItemId': item.id,
+        'name': item.name,
+        'imageUrl': item.imageUrl,
+        'price': item.price,
+        'quantity': 1,
+      });
+    }
+
+    // Show confirmation
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${item.name} added to cart!'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   @override
@@ -195,13 +295,7 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
                                     // Add to Cart Button
                                     OutlinedButton.icon(
                                       onPressed: () {
-                                        // Navigate to ItemDetailPage (for now, same as Buy Now)
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => ItemDetailPage(item: item),
-                                          ),
-                                        );
+                                        _addToCart(item);
                                       },
                                       icon: const Icon(Icons.shopping_cart, size: 18),
                                       label: const Text('Add to Cart'),

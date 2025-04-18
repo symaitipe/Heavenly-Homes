@@ -6,7 +6,7 @@ import '../../model/interior_design.dart';
 import '../../model/user_model.dart';
 import '../../services/auth_services.dart';
 import 'item_details.dart';
-// Import the ItemDetailPage
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -40,7 +40,7 @@ class _HomePageState extends State<HomePage> {
     // Fetch decoration items
     final itemSnapshot = await FirebaseFirestore.instance.collection('decoration_items').get();
     final allItems = itemSnapshot.docs
-        .map((doc) => DecorationItem.fromFirestore(doc.data(), doc.id)) // Pass the document ID
+        .map((doc) => DecorationItem.fromFirestore(doc.data(), doc.id))
         .toList();
     allItems.shuffle();
     setState(() {
@@ -75,6 +75,53 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text('Heavenly Homes'),
         actions: [
+          // Cart Icon with Badge
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('cart')
+                .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid ?? '')
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const SizedBox.shrink();
+              }
+              final itemCount = snapshot.data!.docs.length;
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.shopping_cart),
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/cart');
+                    },
+                  ),
+                  if (itemCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '$itemCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -108,7 +155,7 @@ class _HomePageState extends State<HomePage> {
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
-                'All Categories',
+                'PREMIUM DESIGNS FOR YOUR HOME',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
@@ -199,7 +246,7 @@ class _HomePageState extends State<HomePage> {
                               child: Text(
                                 design.type,
                                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                                textAlign: TextAlign.center, // Center text
+                                textAlign: TextAlign.center,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -208,7 +255,7 @@ class _HomePageState extends State<HomePage> {
                               child: Text(
                                 design.budget,
                                 style: const TextStyle(fontSize: 12),
-                                textAlign: TextAlign.center, // Center text
+                                textAlign: TextAlign.center,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -217,7 +264,7 @@ class _HomePageState extends State<HomePage> {
                               child: Text(
                                 'By ${design.designer}',
                                 style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                textAlign: TextAlign.center, // Center text
+                                textAlign: TextAlign.center,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -241,6 +288,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   TextButton(
                     onPressed: () {
+                      // Navigate to CategorySelectionPage
                       Navigator.pushNamed(context, '/category_selection');
                     },
                     child: const Text(
@@ -269,10 +317,10 @@ class _HomePageState extends State<HomePage> {
                 return GestureDetector(
                   onTap: () {
                     Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => ItemDetailPage(item: item),
-                    ),
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ItemDetailPage(item: item),
+                      ),
                     );
                   },
                   child: Card(
@@ -288,7 +336,15 @@ class _HomePageState extends State<HomePage> {
                             borderRadius: const BorderRadius.vertical(
                               top: Radius.circular(12),
                             ),
-                            child: Image.asset(
+                            child: item.imageUrl.startsWith('http')
+                                ? Image.network(
+                              item.imageUrl,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.broken_image, size: 50),
+                            )
+                                : Image.asset(
                               item.imageUrl,
                               fit: BoxFit.cover,
                               width: double.infinity,
@@ -302,7 +358,7 @@ class _HomePageState extends State<HomePage> {
                           child: Text(
                             item.name,
                             style: const TextStyle(fontSize: 14),
-                            textAlign: TextAlign.center, // Center text
+                            textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -311,7 +367,7 @@ class _HomePageState extends State<HomePage> {
                           child: Text(
                             'Rs ${item.price.toStringAsFixed(2)}',
                             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center, // Center text
+                            textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
