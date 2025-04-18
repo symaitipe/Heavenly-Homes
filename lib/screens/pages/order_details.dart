@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../model/cart_Items.dart';
 import '../../model/decoration_items.dart';
 import 'checkout_page.dart';
 
@@ -37,9 +38,11 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         .get();
     if (doc.exists) {
       final data = doc.data();
-      setState(() {
-        _availableQty = (data?['available_qty'] as num?)?.toInt() ?? 0;
-      });
+      if (mounted) {
+        setState(() {
+          _availableQty = (data?['available_qty'] as num?)?.toInt() ?? 0;
+        });
+      }
     }
   }
 
@@ -143,7 +146,6 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                           widget.item.name,
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
-
                         const SizedBox(height: 4),
                         Row(
                           children: [
@@ -165,7 +167,6 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 8),
                         Text(
                           'Rs ${itemTotal.toStringAsFixed(2)}',
@@ -225,15 +226,25 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
             Expanded(
               child: ElevatedButton(
                 onPressed: () {
-                  // Navigate to CheckoutPage with the selected quantity
+                  // Create a CartItem from the DecorationItem and checkout quantity
+                  final cartItem = CartItem(
+                    id: widget.item.id,
+                    userId: widget.userId,
+                    decorationItemId: widget.item.id,
+                    name: widget.item.name,
+                    imageUrl: widget.item.imageUrl,
+                    price: widget.item.price,
+                    quantity: _checkoutQty,
+                  );
+
+                  // Navigate to CheckoutPage with a list containing this single CartItem
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => CheckoutPage(
-                        item: widget.item,
+                        cartItems: [cartItem], // Pass as a list
                         orderId: widget.orderId,
                         userId: widget.userId,
-                        checkoutQty: _checkoutQty, // Pass the checkout quantity
                         deliveryCharges: deliveryCharges,
                         subtotal: subtotal,
                       ),

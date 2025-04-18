@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import '../../model/decoration_items.dart';
+
+import '../../model/cart_Items.dart';
+
 
 class OrderProcessingPage extends StatelessWidget {
-  final DecorationItem item;
+  final List<CartItem> cartItems;
   final String orderId;
   final String userId;
-  final int checkoutQty;
   final double deliveryCharges;
   final double subtotal;
 
   const OrderProcessingPage({
     super.key,
-    required this.item,
+    required this.cartItems,
     required this.orderId,
     required this.userId,
-    required this.checkoutQty,
     required this.deliveryCharges,
     required this.subtotal,
   });
@@ -48,51 +48,62 @@ class OrderProcessingPage extends StatelessWidget {
               ),
             ),
             // Item Details
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.asset(
-                      item.imageUrl,
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.broken_image, size: 50),
+            ...cartItems.map((item) {
+              return Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: item.imageUrl.startsWith('http')
+                          ? Image.network(
+                        item.imageUrl,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.broken_image, size: 50),
+                      )
+                          : Image.asset(
+                        item.imageUrl,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.broken_image, size: 50),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.name,
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Quantity: $checkoutQty item${checkoutQty > 1 ? 's' : ''}',
-                          style: const TextStyle(fontSize: 14, color: Colors.grey),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Rs ${(item.price * checkoutQty).toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.name,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 4),
+                          Text(
+                            'Quantity: ${item.quantity} item${item.quantity > 1 ? 's' : ''}',
+                            style: const TextStyle(fontSize: 14, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Rs ${(item.price * item.quantity).toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                  ],
+                ),
+              );
+            }),
             const Divider(),
             // Order Summary
             Padding(
@@ -102,7 +113,7 @@ class OrderProcessingPage extends StatelessWidget {
                 children: [
                   _buildSummaryRow('Order ID', orderId),
                   const SizedBox(height: 8),
-                  _buildSummaryRow('Item ID', item.id),
+                  _buildSummaryRow('Items', '${cartItems.length} item${cartItems.length > 1 ? 's' : ''}'),
                   const SizedBox(height: 8),
                   _buildSummaryRow('Delivery Charges', 'Rs ${deliveryCharges.toStringAsFixed(2)}'),
                   const SizedBox(height: 8),

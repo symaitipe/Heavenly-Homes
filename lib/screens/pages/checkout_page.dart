@@ -1,22 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../../model/decoration_items.dart';
+import '../../model/cart_Items.dart';
 import 'order_processing_page.dart';
 
 class CheckoutPage extends StatefulWidget {
-  final DecorationItem item;
+  final List<CartItem> cartItems;
   final String orderId;
   final String userId;
-  final int checkoutQty;
   final double deliveryCharges;
   final double subtotal;
 
   const CheckoutPage({
     super.key,
-    required this.item,
+    required this.cartItems,
     required this.orderId,
     required this.userId,
-    required this.checkoutQty,
     required this.deliveryCharges,
     required this.subtotal,
   });
@@ -41,31 +39,46 @@ class _CheckoutPageState extends State<CheckoutPage> {
     super.dispose();
   }
 
-  // Save the order to Firestore and update available quantity
+  // Save the order to Firestore and update available quantities
   Future<void> _saveOrderAndUpdateQuantity() async {
-    // Save the order
-    await FirebaseFirestore.instance.collection('orders').doc(widget.orderId).set({
+    final batch = FirebaseFirestore.instance.batch();
+
+    // Save the main order document
+    final orderRef = FirebaseFirestore.instance.collection('orders').doc(widget.orderId);
+    batch.set(orderRef, {
       'orderId': widget.orderId,
-      'itemId': widget.item.id,
-      'itemName': widget.item.name,
-      'itemPrice': widget.item.price,
-      'quantity': widget.checkoutQty,
+      'userId': widget.userId,
       'deliveryCharges': widget.deliveryCharges,
       'subtotal': widget.subtotal,
       'status': 'Processing',
-      'userId': widget.userId,
       'address': _addressController.text,
       'paymentMethod': _selectedPaymentMethod,
       'createdAt': Timestamp.now(),
     });
 
-    // Update the available quantity in Firestore
-    await FirebaseFirestore.instance
-        .collection('decoration_items')
-        .doc(widget.item.id)
-        .update({
-      'available_qty': FieldValue.increment(-widget.checkoutQty),
-    });
+    // Save each item in a sub collection
+    for (var item in widget.cartItems) {
+      final itemRef = orderRef.collection('items').doc(item.decorationItemId);
+      batch.set(itemRef, {
+        'itemId': item.decorationItemId,
+        'itemName': item.name,
+        'itemPrice': item.price,
+        'quantity': item.quantity,
+      });
+
+      // Update available quantity
+      final itemDocRef = FirebaseFirestore.instance.collection('decoration_items').doc(item.decorationItemId);
+      batch.update(itemDocRef, {
+        'available_qty': FieldValue.increment(-item.quantity),
+      });
+
+      // Delete cart item
+      final cartDocRef = FirebaseFirestore.instance.collection('cart').doc(item.id);
+      batch.delete(cartDocRef);
+    }
+
+    // Commit the batch
+    await batch.commit();
   }
 
   @override
@@ -127,8 +140,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ),
                 child: Column(
                   children: [
-                    _buildSummaryRow('Item (${widget.checkoutQty} x Rs ${widget.item.price.toStringAsFixed(2)})', 'Rs ${(widget.item.price * widget.checkoutQty).toStringAsFixed(2)}'),
-                    const SizedBox(height: 8),
+                    // List all items
+                    ...widget.cartItems.map((item) {
+                      return Column(
+                        children: [
+                          _buildSummaryRow(
+                            '${item.name} (${item.quantity} x Rs ${item.price.toStringAsFixed(2)})',
+                            'Rs ${(item.price * item.quantity).toStringAsFixed(2)}',
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      );
+                    }),
                     _buildSummaryRow('Delivery Charge', 'Rs ${widget.deliveryCharges.toStringAsFixed(2)}'),
                     const SizedBox(height: 8),
                     _buildSummaryRow('Promotion', 'Not Available', valueColor: Colors.grey),
@@ -168,7 +191,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               return;
             }
 
-            // Simulate payment, save the order, and update quantity
+            // Save the order and update quantities
             await _saveOrderAndUpdateQuantity();
 
             // Navigate to OrderProcessingPage
@@ -177,10 +200,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => OrderProcessingPage(
-                    item: widget.item,
+                    cartItems: widget.cartItems,
                     orderId: widget.orderId,
                     userId: widget.userId,
-                    checkoutQty: widget.checkoutQty, // Pass the checkout quantity
                     deliveryCharges: widget.deliveryCharges,
                     subtotal: widget.subtotal,
                   ),

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../model/cart_Items.dart';
 import '../../model/decoration_items.dart';
 import 'order_details.dart';
 
@@ -22,18 +23,115 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
     _selectedImageUrl = widget.item.imageUrl;
   }
 
-  // Check available quantity before proceeding to Buy Now
-  Future<bool> _checkAvailableQuantity() async {
+  // Check available quantity before proceeding to Buy Now or Add to Cart
+  Future<int> _checkAvailableQuantity() async {
     final doc = await FirebaseFirestore.instance
         .collection('decoration_items')
         .doc(widget.item.id)
         .get();
     if (doc.exists) {
       final data = doc.data();
-      final availableQty = (data?['available_qty'] as num?)?.toInt() ?? 0;
-      return availableQty > 0;
+      return (data?['available_qty'] as num?)?.toInt() ?? 0;
     }
-    return false;
+    return 0;
+  }
+
+  // Add item to cart
+  Future<void> _addToCart() async {
+    // Check if user is logged in
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (context.mounted) {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+      return;
+    }
+
+    // Check available quantity
+    final availableQty = await _checkAvailableQuantity();
+    if (availableQty <= 0) {
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Out of Stock'),
+            content: const Text('Sorry, this item is currently out of stock.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+
+    // Check if the item is already in the cart
+    final cartSnapshot = await FirebaseFirestore.instance
+        .collection('cart')
+        .where('userId', isEqualTo: user.uid)
+        .where('decorationItemId', isEqualTo: widget.item.id)
+        .get();
+
+    final batch = FirebaseFirestore.instance.batch();
+
+    if (cartSnapshot.docs.isNotEmpty) {
+      // Item exists in cart; increment quantity
+      final cartDoc = cartSnapshot.docs.first;
+      final currentQty = (cartDoc.data()['quantity'] as num?)?.toInt() ?? 1;
+      final newQty = currentQty + 1;
+
+      if (newQty > availableQty) {
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Quantity Exceeded'),
+              content: Text('Only $availableQty items are available.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+
+      // Update quantity in cart
+      batch.update(cartDoc.reference, {'quantity': newQty});
+    } else {
+      // Item not in cart; add new entry with quantity 1
+      final cartItem = CartItem(
+        id: '', // Will be set by Firestore
+        userId: user.uid,
+        decorationItemId: widget.item.id,
+        name: widget.item.name,
+        imageUrl: widget.item.imageUrl,
+        price: widget.item.price,
+        quantity: 1,
+      );
+
+      final cartDocRef = FirebaseFirestore.instance.collection('cart').doc();
+      batch.set(cartDocRef, cartItem.toFirestore());
+    }
+
+    // Commit the batch
+    await batch.commit();
+
+    // Show confirmation
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${widget.item.name} added to cart!'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   @override
@@ -178,9 +276,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
           children: [
             Expanded(
               child: ElevatedButton(
-                onPressed: () {
-                  // Implement Add to Cart functionality (future enhancement)
-                },
+                onPressed: _addToCart,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.black,
@@ -206,8 +302,8 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
                   }
 
                   // Check available quantity
-                  bool hasStock = await _checkAvailableQuantity();
-                  if (!hasStock) {
+                  int availableQty = await _checkAvailableQuantity();
+                  if (availableQty <= 0) {
                     // Show alert if out of stock
                     if (context.mounted) {
                       showDialog(
