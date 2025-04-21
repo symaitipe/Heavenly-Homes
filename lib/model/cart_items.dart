@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class CartItem {
   final String id;
   final String userId;
@@ -7,6 +5,7 @@ class CartItem {
   final String name;
   final String imageUrl;
   final double price;
+  final double? discountedPrice;
   final int quantity;
 
   CartItem({
@@ -16,28 +15,32 @@ class CartItem {
     required this.name,
     required this.imageUrl,
     required this.price,
+    this.discountedPrice,
     required this.quantity,
   });
 
-  factory CartItem.fromFirestore(Map<String, dynamic> data, String id) {
+  factory CartItem.fromFirestore(Map<String, dynamic> data, [String? id]) {
     return CartItem(
-      id: id,
+      id: id ?? data['id'] ?? '',
       userId: data['userId'] ?? '',
       decorationItemId: data['decorationItemId'] ?? '',
-      name: data['name'] ?? '',
-      imageUrl: data['imageUrl'] ?? '',
+      name: data['name'] ?? 'Unknown Item',
+      imageUrl: data['imageUrl'] ?? 'assets/images/default_item.png',
       price: (data['price'] as num?)?.toDouble() ?? 0.0,
+      discountedPrice: (data['discountedPrice'] as num?)?.toDouble(),
       quantity: (data['quantity'] as num?)?.toInt() ?? 1,
     );
   }
 
   Map<String, dynamic> toFirestore() {
     return {
+      'id': id,
       'userId': userId,
       'decorationItemId': decorationItemId,
       'name': name,
       'imageUrl': imageUrl,
       'price': price,
+      'discountedPrice': discountedPrice,
       'quantity': quantity,
     };
   }

@@ -113,6 +113,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
         name: widget.item.name,
         imageUrl: widget.item.imageUrl,
         price: widget.item.price,
+        discountedPrice: widget.item.isDiscounted ? widget.item.discountedPrice : null, // Use discounted price if available
         quantity: 1,
       );
 
@@ -163,7 +164,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
               width: double.infinity,
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: AssetImage(_selectedImageUrl),
+                  image: NetworkImage(_selectedImageUrl), // Changed to NetworkImage for consistency with BestBidsPage
                   fit: BoxFit.cover,
                   onError: (exception, stackTrace) => const Icon(Icons.broken_image, size: 50),
                 ),
@@ -202,7 +203,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
                       padding: const EdgeInsets.symmetric(horizontal: 4.0),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.asset(
+                        child: Image.network( // Changed to Image.network for consistency
                           subImageUrl,
                           width: 80,
                           height: 80,
@@ -249,10 +250,38 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'Rs ${widget.item.price.toStringAsFixed(2)}',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
-                  ),
+                  // Price Display (Show discounted price if available)
+                  if (widget.item.isDiscounted && widget.item.discountedPrice != null)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Rs ${widget.item.price.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                        Text(
+                          'Rs ${widget.item.discountedPrice!.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Text(
+                      'Rs ${widget.item.price.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
                   const SizedBox(height: 16),
                   const Text(
                     'Description',
@@ -326,7 +355,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
                   // Generate a unique order ID (using timestamp for simplicity)
                   final orderId = DateTime.now().millisecondsSinceEpoch.toString();
 
-                  // Navigate to OrderDetailPage
+                  // Navigate to OrderDetailPage, passing the discounted price if available
                   if (context.mounted) {
                     Navigator.push(
                       context,

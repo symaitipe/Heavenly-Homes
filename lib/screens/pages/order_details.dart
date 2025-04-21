@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../../model/cart_Items.dart';
+import '../../model/cart_items.dart';
 import '../../model/decoration_items.dart';
 import 'checkout_page.dart';
 

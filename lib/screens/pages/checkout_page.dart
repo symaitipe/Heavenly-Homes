@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../../model/cart_Items.dart';
+import '../../model/cart_items.dart';
 import 'order_processing_page.dart';
 
 class CheckoutPage extends StatefulWidget {
