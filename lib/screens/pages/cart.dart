@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
 
-
 import '../../model/cart_items.dart';
 import 'checkout_page.dart';
 
@@ -46,23 +45,43 @@ class _CartPageState extends State<CartPage> {
     final selectedIds = <String>{};
 
     for (var doc in snapshot.docs) {
-      final cartItem = CartItem.fromFirestore(doc.data(), doc.id);
-      // Fetch category from decoration_items
+      final cartData = doc.data();
+      // Fetch additional item details from decoration_items
       final itemDoc = await FirebaseFirestore.instance
           .collection('decoration_items')
-          .doc(cartItem.decorationItemId)
+          .doc(cartData['decorationItemId'] as String)
           .get();
-      final category = (itemDoc.data()?['category'] as String?) ?? 'Other';
+      final itemData = itemDoc.data();
+      if (itemData == null) continue;
+
+      final category = (itemData['category'] as String?) ?? 'Other';
+      final isDiscounted = itemData['isDiscounted'] as bool? ?? false;
+      final discountedPrice = isDiscounted
+          ? (itemData['discountedPrice'] as num?)?.toDouble()
+          : null;
+
+      final cartItem = CartItem(
+        id: doc.id,
+        userId: cartData['userId'] as String,
+        decorationItemId: cartData['decorationItemId'] as String,
+        name: cartData['name'] as String,
+        imageUrl: cartData['imageUrl'] as String,
+        price: (cartData['price'] as num).toDouble(),
+        discountedPrice: discountedPrice,
+        quantity: (cartData['quantity'] as num).toInt(),
+      );
+
       items.add(cartItem);
       itemsByCategory.putIfAbsent(category, () => []).add(cartItem);
       selectedIds.add(cartItem.id); // Select all items by default
     }
 
-    // Calculate subtotal for selected items
+    // Calculate subtotal for selected items using discounted price if available
     double subtotal = 0.0;
     for (var item in items) {
       if (selectedIds.contains(item.id)) {
-        subtotal += item.price * item.quantity;
+        final price = item.discountedPrice ?? item.price;
+        subtotal += price * item.quantity;
       }
     }
 
@@ -140,10 +159,12 @@ class _CartPageState extends State<CartPage> {
     setState(() {
       if (_selectedItemIds.contains(cartItem.id)) {
         _selectedItemIds.remove(cartItem.id);
-        _subtotal -= cartItem.price * cartItem.quantity;
+        final price = cartItem.discountedPrice ?? cartItem.price;
+        _subtotal -= price * cartItem.quantity;
       } else {
         _selectedItemIds.add(cartItem.id);
-        _subtotal += cartItem.price * cartItem.quantity;
+        final price = cartItem.discountedPrice ?? cartItem.price;
+        _subtotal += price * cartItem.quantity;
       }
     });
   }
@@ -205,13 +226,12 @@ class _CartPageState extends State<CartPage> {
     const uuid = Uuid();
     final orderId = uuid.v4();
 
-    // Calculate delivery charges and subtotal
+    // Calculate delivery charges and subtotal using discounted price
     const deliveryCharges = 35000.0; // Consistent with OrderDetailPage
     final subtotal = selectedItems.fold<double>(
       0.0,
-          (double sum, item) => sum + (item.price * item.quantity),
-    ) +
-        deliveryCharges;
+          (double sum, item) => sum + ((item.discountedPrice ?? item.price) * item.quantity),
+    ) + deliveryCharges;
 
     // Navigate to CheckoutPage with selected items
     if (isMounted) {
@@ -267,6 +287,7 @@ class _CartPageState extends State<CartPage> {
                       ),
                     ),
                     ...items.map((cartItem) {
+                      final displayPrice = cartItem.discountedPrice ?? cartItem.price;
                       return Card(
                         elevation: 2,
                         shape: RoundedRectangleBorder(
@@ -319,13 +340,35 @@ class _CartPageState extends State<CartPage> {
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    Text(
-                                      'Rs ${cartItem.price.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
+                                    if (cartItem.discountedPrice != null)
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Rs ${cartItem.price.toStringAsFixed(2)}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                              decoration: TextDecoration.lineThrough,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Rs ${cartItem.discountedPrice!.toStringAsFixed(2)}',
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    else
+                                      Text(
+                                        'Rs ${cartItem.price.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    ),
                                     const SizedBox(height: 8),
                                     // Quantity Controls
                                     Row(

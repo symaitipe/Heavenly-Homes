@@ -91,7 +91,11 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   @override
   Widget build(BuildContext context) {
     const double deliveryCharges = 35000.0;
-    final double itemTotal = widget.item.price * _checkoutQty;
+    // Use discounted price if available, otherwise use original price
+    final double displayPrice = widget.item.isDiscounted && widget.item.discountedPrice != null
+        ? widget.item.discountedPrice!
+        : widget.item.price;
+    final double itemTotal = displayPrice * _checkoutQty;
     final double subtotal = itemTotal + deliveryCharges;
 
     return Scaffold(
@@ -128,7 +132,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.asset(
+                    child: Image.network(
                       widget.item.imageUrl,
                       width: 100,
                       height: 100,
@@ -168,14 +172,60 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          'Rs ${itemTotal.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                        if (widget.item.isDiscounted && widget.item.discountedPrice != null)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Rs ${widget.item.price.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                              Text(
+                                'Rs ${widget.item.discountedPrice!.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Total: Rs ${itemTotal.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Rs ${widget.item.price.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Total: Rs ${itemTotal.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -234,6 +284,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                     name: widget.item.name,
                     imageUrl: widget.item.imageUrl,
                     price: widget.item.price,
+                    discountedPrice: widget.item.isDiscounted ? widget.item.discountedPrice : null,
                     quantity: _checkoutQty,
                   );
 
@@ -242,7 +293,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => CheckoutPage(
-                        cartItems: [cartItem], // Pass as a list
+                        cartItems: [cartItem],
                         orderId: widget.orderId,
                         userId: widget.userId,
                         deliveryCharges: deliveryCharges,

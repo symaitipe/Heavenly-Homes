@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../../model/cart_Items.dart';
+import '../../model/cart_items.dart';
 import '../../model/decoration_items.dart';
 import 'order_details.dart';
 
@@ -113,7 +113,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
         name: widget.item.name,
         imageUrl: widget.item.imageUrl,
         price: widget.item.price,
-        discountedPrice: widget.item.isDiscounted ? widget.item.discountedPrice : null, // Use discounted price if available
+        discountedPrice: widget.item.isDiscounted ? widget.item.discountedPrice : null,
         quantity: 1,
       );
 
@@ -159,28 +159,44 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Main Image
-            Container(
+            SizedBox(
               height: 300,
               width: double.infinity,
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: NetworkImage(_selectedImageUrl), // Changed to NetworkImage for consistency with BestBidsPage
-                  fit: BoxFit.cover,
-                  onError: (exception, stackTrace) => const Icon(Icons.broken_image, size: 50),
-                ),
-              ),
-              child: Align(
-                alignment: Alignment.topRight,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: IconButton(
-                    icon: const Icon(Icons.favorite_border),
-                    color: Colors.white,
-                    onPressed: () {
-                      // Implement favorite functionality (future enhancement)
-                    },
+              child: Stack(
+                children: [
+                  // Image (background)
+                  _selectedImageUrl.startsWith('http')
+                      ? Image.network(
+                    _selectedImageUrl,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: 300,
+                    errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.broken_image, size: 50),
+                  )
+                      : Image.asset(
+                    _selectedImageUrl,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: 300,
+                    errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.broken_image, size: 50),
                   ),
-                ),
+                  // Favorite Button (overlay)
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: IconButton(
+                        icon: const Icon(Icons.favorite_border),
+                        color: Colors.white,
+                        onPressed: () {
+                          // Implement favorite functionality (future enhancement)
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             // Sub-Images
@@ -203,7 +219,16 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
                       padding: const EdgeInsets.symmetric(horizontal: 4.0),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.network( // Changed to Image.network for consistency
+                        child: subImageUrl.startsWith('http')
+                            ? Image.network(
+                          subImageUrl,
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.broken_image, size: 40),
+                        )
+                            : Image.asset(
                           subImageUrl,
                           width: 80,
                           height: 80,
@@ -250,7 +275,6 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  // Price Display (Show discounted price if available)
                   if (widget.item.isDiscounted && widget.item.discountedPrice != null)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,11 +300,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
                   else
                     Text(
                       'Rs ${widget.item.price.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
                     ),
                   const SizedBox(height: 16),
                   const Text(
@@ -352,10 +372,10 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
                     return;
                   }
 
-                  // Generate a unique order ID (using timestamp for simplicity)
+                  // Generate a unique order ID
                   final orderId = DateTime.now().millisecondsSinceEpoch.toString();
 
-                  // Navigate to OrderDetailPage, passing the discounted price if available
+                  // Navigate to OrderDetailPage
                   if (context.mounted) {
                     Navigator.push(
                       context,

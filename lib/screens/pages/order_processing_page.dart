@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-
 import '../../model/cart_items.dart';
-
 
 class OrderProcessingPage extends StatelessWidget {
   final List<CartItem> cartItems;
@@ -21,15 +19,30 @@ class OrderProcessingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Show "Order placed successfully" pop-up after the page is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Success'),
+          content: const Text('Order placed successfully!'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Order'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -49,6 +62,8 @@ class OrderProcessingPage extends StatelessWidget {
             ),
             // Item Details
             ...cartItems.map((item) {
+              final displayPrice = item.discountedPrice ?? item.price;
+              final itemTotal = displayPrice * item.quantity;
               return Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
@@ -89,14 +104,37 @@ class OrderProcessingPage extends StatelessWidget {
                             style: const TextStyle(fontSize: 14, color: Colors.grey),
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            'Rs ${(item.price * item.quantity).toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
+                          if (item.discountedPrice != null)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Rs ${(item.price * item.quantity).toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                                ),
+                                Text(
+                                  'Rs ${itemTotal.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            Text(
+                              'Rs ${itemTotal.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -122,6 +160,31 @@ class OrderProcessingPage extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () {
+              // Navigate to home page
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                    (Route<dynamic> route) => false,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.yellow,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: const Text('Go to Home'),
+          ),
         ),
       ),
     );

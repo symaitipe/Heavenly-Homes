@@ -91,7 +91,6 @@ class BestBidsPage extends StatelessWidget {
                                 fit: BoxFit.cover,
                                 width: double.infinity,
                                 errorBuilder: (context, error, stackTrace) {
-                                  //print('Image load error for URL: ${item.imageUrl}');
                                   return const Icon(Icons.broken_image, size: 50);
                                 },
                               ),
@@ -119,6 +118,8 @@ class BestBidsPage extends StatelessWidget {
                                     fontSize: 12,
                                     color: Colors.grey,
                                     decoration: TextDecoration.lineThrough,
+                                    decorationColor: Colors.grey,
+                                    decorationThickness: 2.0,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
