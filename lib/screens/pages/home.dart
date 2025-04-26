@@ -167,7 +167,7 @@ class _HomePageState extends State<HomePage> {
                   context,
                   'Meet My Designer',
                   Icons.person,
-                  '/designer_details',
+                  '/contact_designer',
                 ),
                 _buildOptionCard(
                   context,

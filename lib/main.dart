@@ -5,7 +5,7 @@ import 'package:heavenly_homes/screens/pages/best_bids.dart';
 import 'package:heavenly_homes/screens/pages/cart.dart';
 import 'package:heavenly_homes/screens/pages/category_selection.dart';
 import 'package:heavenly_homes/screens/pages/checkout_page.dart';
-import 'package:heavenly_homes/screens/pages/designer_details.dart';
+import 'package:heavenly_homes/screens/pages/contact_designer_page.dart';
 import 'package:heavenly_homes/screens/pages/home.dart';
 import 'package:heavenly_homes/screens/pages/order_details.dart';
 import 'package:heavenly_homes/screens/pages/order_processing_page.dart';
@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
         '/intro': (context) => const IntroPage(),
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomePage(),
-        '/designer_details': (context) => const DesignerDetailsPage(),
+        '/contact_designer': (context) => const ContactDesignerPage(),
         '/category_selection': (context) => const CategorySelectionPage(),
         '/best_bids': (context) => const BestBidsPage(),
         '/cart': (context) => const CartPage(),
@@ -79,7 +79,7 @@ class MyApp extends StatelessWidget {
           deliveryCharges: 0.0,
           subtotal: 0.0,
         ),
-      },
+       },
     );
   }
 }
