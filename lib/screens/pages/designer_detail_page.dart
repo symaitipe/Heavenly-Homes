@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../model/designer.dart';
+import 'project_detail_page.dart';
 
 class DesignerDetailPage extends StatefulWidget {
   final Designer designer;
@@ -159,7 +160,7 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Offering consultancy services in Architecture, Landscape, and Interior design in Sri Lanka.',
+              widget.designer.services,
               style: const TextStyle(fontSize: 14, color: Colors.black87),
             ),
             const SizedBox(height: 16),
@@ -197,19 +198,6 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
             Text(
               widget.designer.location,
               style: const TextStyle(fontSize: 14, color: Colors.black87),
-            ),
-            const SizedBox(height: 16),
-            // Placeholder Map
-            Container(
-              height: 150,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: Colors.grey[200],
-              ),
-              child: const Center(
-                child: Icon(Icons.location_pin, size: 50, color: Colors.red),
-              ),
             ),
             const SizedBox(height: 16),
           ],
@@ -262,41 +250,60 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
             ),
             const SizedBox(height: 16),
             // Project List
-            ...widget.designer.projects.map((project) => Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(
-                      project.imageUrl,
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.broken_image, size: 50),
+            ...widget.designer.projects.asMap().entries.map((entry) {
+              final index = entry.key;
+              final project = entry.value;
+              final projectId = '${widget.designer.id}_$index';
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProjectDetailPage(
+                        project: project,
+                        projectId: projectId,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          project.title,
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(
+                          project.imageUrl,
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.broken_image, size: 50),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Category: ${project.category}',
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              project.title,
+                              style: const TextStyle(
+                                  fontSize: 14, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Category: ${project.category}',
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            )),
+                ),
+              );
+            }),
             const SizedBox(height: 16),
           ],
         ),
