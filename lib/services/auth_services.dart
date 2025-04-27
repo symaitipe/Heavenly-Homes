@@ -1,55 +1,118 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../model/user_model.dart';
 
+class AuthServices {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-// Function to handle Google Sign-In
-Future<void> signInWithGoogle(BuildContext context) async {
-  try {
-    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-
-    if (googleUser == null) {
-      return;
+  // Email/Password Sign-In
+  Future<UserModel?> signInWithEmail(String email, String password) async {
+    try {
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      return UserModel.fromFirebase(userCredential.user!);
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(_getAuthErrorMessage(e.code));
+    } catch (e) {
+      throw AuthException('An unexpected error occurred');
     }
+  }
 
-    final GoogleSignInAuthentication googleAuth =
-        await googleUser.authentication;
+  // Email/Password Sign-Up
+  Future<UserModel?> signUpWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final UserCredential userCredential =
+      await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password.trim(),
+      );
 
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
-
-    await FirebaseAuth.instance.signInWithCredential(credential);
-
-    // Navigate to Home page after successful login
-    if (context.mounted) {
-      Navigator.pushReplacementNamed(context, '/home');
+      if (userCredential.user != null) {
+        return UserModel(
+          uid: userCredential.user!.uid,
+          email: userCredential.user!.email,
+          displayName: userCredential.user!.displayName,
+          photoUrl: userCredential.user!.photoURL,
+        );
+      }
+      return null;
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(_getAuthErrorMessage(e.code));
+    } catch (e) {
+      throw AuthException('An unexpected error occurred');
     }
-  } catch (e) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error signing in: $e')));
+  }
+
+  // Google Sign-In
+  Future<UserModel?> signInWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+      if (googleUser == null) return null;
+
+      final GoogleSignInAuthentication googleAuth =
+      await googleUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      UserCredential userCredential =
+      await _auth.signInWithCredential(credential);
+      return UserModel.fromFirebase(userCredential.user!);
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(_getAuthErrorMessage(e.code));
+    } catch (e) {
+      throw AuthException('An unexpected error occurred');
+    }
+  }
+
+  // Sign Out
+  Future<void> signOut() async {
+    try {
+      await _auth.signOut();
+      await GoogleSignIn().signOut();
+    } catch (e) {
+      throw AuthException('Error signing out');
+    }
+  }
+
+  // Helper: Convert Firebase error codes to user-friendly messages
+  String _getAuthErrorMessage(String code) {
+    switch (code) {
+      case 'email-already-in-use':
+        return 'This email is already registered.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'weak-password':
+        return 'Password should be at least 6 characters.';
+      case 'operation-not-allowed':
+        return 'Email/password sign-ups are disabled.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
+      case 'user-not-found':
+        return 'No account found with this email.';
+      case 'wrong-password':
+        return 'Incorrect password. Please try again.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later.';
+      default:
+        return 'An error occurred. Please try again.';
     }
   }
 }
 
-// Function to handle Google Sign-In
-Future<void> signOut(BuildContext context) async {
-  try {
-    await GoogleSignIn().signOut();
-    await FirebaseAuth.instance.signOut();
-    await FirebaseAuth.instance.authStateChanges().first;
+// Custom exception class for auth errors
+class AuthException implements Exception {
+  final String message;
+  AuthException(this.message);
 
-    if (context.mounted) {
-      Navigator.pushReplacementNamed(context, '/login');
-    }
-  } catch (e) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Logout failed: $e")));
-    }
-  }
+  @override
+  String toString() => message;
 }
