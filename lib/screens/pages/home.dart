@@ -7,7 +7,6 @@ import '../../model/user_model.dart';
 import '../../services/auth_services.dart';
 import 'item_details.dart';
 
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -28,20 +27,24 @@ class _HomePageState extends State<HomePage> {
   // Fetch and select unique items
   Future<void> _fetchAndSelectItems() async {
     // Fetch interior designs
-    final designSnapshot = await FirebaseFirestore.instance.collection('interior_designs').get();
-    final allDesigns = designSnapshot.docs
-        .map((doc) => InteriorDesign.fromFirestore(doc.data()))
-        .toList();
+    final designSnapshot =
+        await FirebaseFirestore.instance.collection('interior_designs').get();
+    final allDesigns =
+        designSnapshot.docs
+            .map((doc) => InteriorDesign.fromFirestore(doc.data()))
+            .toList();
     allDesigns.shuffle();
     setState(() {
       _selectedDesigns = allDesigns.take(3).toList();
     });
 
     // Fetch decoration items
-    final itemSnapshot = await FirebaseFirestore.instance.collection('decoration_items').get();
-    final allItems = itemSnapshot.docs
-        .map((doc) => DecorationItem.fromFirestore(doc.data(), doc.id))
-        .toList();
+    final itemSnapshot =
+        await FirebaseFirestore.instance.collection('decoration_items').get();
+    final allItems =
+        itemSnapshot.docs
+            .map((doc) => DecorationItem.fromFirestore(doc.data(), doc.id))
+            .toList();
     allItems.shuffle();
     setState(() {
       _selectedItems = allItems.take(3).toList();
@@ -62,9 +65,7 @@ class _HomePageState extends State<HomePage> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.pushReplacementNamed(context, '/login');
         });
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
       }
       userModel = UserModel.fromFirebase(firebaseUser);
     }
@@ -77,10 +78,14 @@ class _HomePageState extends State<HomePage> {
         actions: [
           // Cart Icon with Badge
           StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('cart')
-                .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid ?? '')
-                .snapshots(),
+            stream:
+                FirebaseFirestore.instance
+                    .collection('cart')
+                    .where(
+                      'userId',
+                      isEqualTo: FirebaseAuth.instance.currentUser?.uid ?? '',
+                    )
+                    .snapshots(),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
                 return const SizedBox.shrink();
@@ -167,7 +172,7 @@ class _HomePageState extends State<HomePage> {
                   context,
                   'Meet My Designer',
                   Icons.person,
-                  '/designer_details',
+                  '/contact_designer',
                 ),
                 _buildOptionCard(
                   context,
@@ -209,73 +214,93 @@ class _HomePageState extends State<HomePage> {
             _selectedDesigns.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : SizedBox(
-              height: 200,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _selectedDesigns.length,
-                itemBuilder: (context, index) {
-                  final design = _selectedDesigns[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 2,
-                      child: SizedBox(
-                        width: 110,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(12),
+                  height: 200,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _selectedDesigns.length,
+                    itemBuilder: (context, index) {
+                      final design = _selectedDesigns[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                          child: SizedBox(
+                            width: 110,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(12),
+                                    ),
+                                    child: Image.asset(
+                                      design.imageUrl,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              const Icon(
+                                                Icons.broken_image,
+                                                size: 50,
+                                              ),
+                                    ),
+                                  ),
                                 ),
-                                child: Image.asset(
-                                  design.imageUrl,
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.broken_image, size: 50),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    8,
+                                    4,
+                                    8,
+                                    2,
+                                  ),
+                                  child: Text(
+                                    design.type,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8.0,
+                                  ),
+                                  child: Text(
+                                    design.budget,
+                                    style: const TextStyle(fontSize: 12),
+                                    textAlign: TextAlign.center,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8.0,
+                                    vertical: 2,
+                                  ),
+                                  child: Text(
+                                    'By ${design.designer}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(8, 4, 8, 2),
-                              child: Text(
-                                design.type,
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                                textAlign: TextAlign.center,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                              child: Text(
-                                design.budget,
-                                style: const TextStyle(fontSize: 12),
-                                textAlign: TextAlign.center,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2),
-                              child: Text(
-                                'By ${design.designer}',
-                                style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                textAlign: TextAlign.center,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
+                      );
+                    },
+                  ),
+                ),
             //------------------------------------ Decoration Items Section -----------------------------
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -302,81 +327,96 @@ class _HomePageState extends State<HomePage> {
             _selectedItems.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                childAspectRatio: 0.7,
-              ),
-              itemCount: _selectedItems.length,
-              itemBuilder: (context, index) {
-                final item = _selectedItems[index];
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ItemDetailPage(item: item),
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 0.7,
+                  ),
+                  itemCount: _selectedItems.length,
+                  itemBuilder: (context, index) {
+                    final item = _selectedItems[index];
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ItemDetailPage(item: item),
+                          ),
+                        );
+                      },
+                      child: Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(12),
+                                ),
+                                child:
+                                    item.imageUrl.startsWith('http')
+                                        ? Image.network(
+                                          item.imageUrl,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  const Icon(
+                                                    Icons.broken_image,
+                                                    size: 50,
+                                                  ),
+                                        )
+                                        : Image.asset(
+                                          item.imageUrl,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  const Icon(
+                                                    Icons.broken_image,
+                                                    size: 50,
+                                                  ),
+                                        ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(8, 4, 8, 2),
+                              child: Text(
+                                item.name,
+                                style: const TextStyle(fontSize: 14),
+                                textAlign: TextAlign.center,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8.0,
+                                vertical: 2,
+                              ),
+                              child: Text(
+                                'Rs ${item.price.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },
-                  child: Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(12),
-                            ),
-                            child: item.imageUrl.startsWith('http')
-                                ? Image.network(
-                              item.imageUrl,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.broken_image, size: 50),
-                            )
-                                : Image.asset(
-                              item.imageUrl,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.broken_image, size: 50),
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(8, 4, 8, 2),
-                          child: Text(
-                            item.name,
-                            style: const TextStyle(fontSize: 14),
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2),
-                          child: Text(
-                            'Rs ${item.price.toStringAsFixed(2)}',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+                ),
           ],
         ),
       ),
@@ -384,12 +424,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildOptionCard(
-      BuildContext context,
-      String title,
-      IconData icon,
-      String route, {
-        bool hasDiscount = false,
-      }) {
+    BuildContext context,
+    String title,
+    IconData icon,
+    String route, {
+    bool hasDiscount = false,
+  }) {
     return Card(
       color: Colors.black,
       child: InkWell(

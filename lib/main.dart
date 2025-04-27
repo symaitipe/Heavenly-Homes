@@ -5,7 +5,7 @@ import 'package:heavenly_homes/screens/pages/best_bids.dart';
 import 'package:heavenly_homes/screens/pages/cart.dart';
 import 'package:heavenly_homes/screens/pages/category_selection.dart';
 import 'package:heavenly_homes/screens/pages/checkout_page.dart';
-import 'package:heavenly_homes/screens/pages/designer_details.dart';
+import 'package:heavenly_homes/screens/pages/contact_designer_page.dart';
 import 'package:heavenly_homes/screens/pages/home.dart';
 import 'package:heavenly_homes/screens/pages/order_details.dart';
 import 'package:heavenly_homes/screens/pages/order_processing_page.dart';
@@ -36,9 +36,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Heavenly Homes',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue),
       initialRoute: '/splash', // Set the initial route
       routes: {
         '/splash': (context) => const SplashScreen(),
@@ -46,18 +44,20 @@ class MyApp extends StatelessWidget {
         '/intro': (context) => const IntroPage(),
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomePage(),
-        '/designer_details': (context) => const DesignerDetailsPage(),
+        '/contact_designer': (context) => const ContactDesignerPage(),
         '/category_selection': (context) => const CategorySelectionPage(),
         '/best_bids': (context) => const BestBidsPage(),
         '/cart': (context) => const CartPage(),
-        '/checkout': (context) => const CheckoutPage(
+        '/checkout':
+            (context) => const CheckoutPage(
               cartItems: [],
               orderId: '',
               userId: '',
               deliveryCharges: 0.0,
               subtotal: 0.0,
             ),
-        '/order_detail': (context) => OrderDetailPage(
+        '/order_detail':
+            (context) => OrderDetailPage(
               item: DecorationItem(
                 id: '',
                 name: '',
@@ -74,7 +74,8 @@ class MyApp extends StatelessWidget {
               orderId: '',
               userId: '',
             ),
-        '/order_processing': (context) => const OrderProcessingPage(
+        '/order_processing':
+            (context) => const OrderProcessingPage(
               cartItems: [],
               orderId: '',
               userId: '',
