@@ -77,6 +77,12 @@ flutter:
     - assets/logos/Splash screen main photo.png
     - assets/logos/app-logo.png
     - assets/logos/3D photo.png
+    - assets/homescreen/Group 71.png
+    - assets/homescreen/Group 72.png
+    - assets/homescreen/Group 73.png
+    - assets/homescreen/Main card1.png
+    - assets/homescreen/Main card2.png
+    - assets/homescreen/cart_icon.png
 
   fonts:
     - family: PoiretOne
