@@ -56,13 +56,12 @@ class _LoginPageState extends State<LoginPage> {
           context,
           _isLogin ? 'Successfully logged in!' : 'Account created successfully!',
         );
-        // Navigate to home screen using named route
         Future.delayed(const Duration(seconds: 1), () {
           if (mounted) {
             Navigator.pushNamedAndRemoveUntil(
               context,
               '/home',
-              (route) => false, // Removes all previous routes
+              (route) => false,
             );
           }
         });
@@ -95,7 +94,6 @@ class _LoginPageState extends State<LoginPage> {
 
       if (user != null && mounted) {
         showSuccessDialog(context, 'Account created successfully!');
-        // Navigate to home screen using named route
         Future.delayed(const Duration(seconds: 1), () {
           if (mounted) {
             Navigator.pushNamedAndRemoveUntil(
@@ -128,7 +126,6 @@ class _LoginPageState extends State<LoginPage> {
       final user = await _authServices.signInWithGoogle();
       if (user != null && mounted) {
         showSuccessDialog(context, 'Successfully logged in with Google!');
-        // Navigate to home screen using named route
         Future.delayed(const Duration(seconds: 1), () {
           if (mounted) {
             Navigator.pushNamedAndRemoveUntil(
@@ -212,7 +209,7 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 120),
 
-              // Sign Up Button (Black with white text)
+              // Sign Up Button
               SizedBox(
                 width: 303,
                 height: 44,
@@ -243,7 +240,7 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 20),
 
-              // Login Button (White)
+              // Login Button
               SizedBox(
                 width: 303,
                 height: 44,
@@ -274,19 +271,35 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 30),
 
-              // OR CONTINUE WITH text
-              Container(
-                width: 150,
-                height: 24,
-                alignment: Alignment.center,
-                child: Text(
-                  'OR CONTINUE WITH',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    height: 1.0,
-                    color: Colors.white,
-                  ),
+              // OR CONTINUE WITH with responsive dividers
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Divider(
+                        color: Colors.white,
+                        thickness: 1,
+                        endIndent: 10,
+                      ),
+                    ),
+                    Text(
+                      'OR CONTINUE WITH',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        height: 1.0,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Expanded(
+                      child: Divider(
+                        color: Colors.white,
+                        thickness: 1,
+                        indent: 10,
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
@@ -436,8 +449,9 @@ class _LoginPageState extends State<LoginPage> {
               // Forgot your user name or password?
               Padding(
                 padding: const EdgeInsets.only(left: 72),
-                child: Container(
-                  color: const Color(0xFFD8D8D8),
+                child: SizedBox(
+                  width: 222,
+                  height: 18,
                   child: Text(
                     'Forgot your user name or password?',
                     style: GoogleFonts.poppins(
@@ -445,7 +459,7 @@ class _LoginPageState extends State<LoginPage> {
                       fontWeight: FontWeight.w400,
                       fontStyle: FontStyle.italic,
                       height: 1.0,
-                      color: const Color(0xFF000000).withOpacity(0.5),
+                      color: const Color(0xFFD8D8D8).withOpacity(0.5),
                       decoration: TextDecoration.underline,
                     ),
                   ),
