@@ -4,6 +4,7 @@ import 'package:heavenly_homes/screens/authenticates/login.dart';
 import 'package:heavenly_homes/screens/pages/best_bids.dart';
 import 'package:heavenly_homes/screens/pages/cart.dart';
 import 'package:heavenly_homes/screens/pages/category_selection.dart';
+import 'package:heavenly_homes/screens/pages/chat_page.dart';
 import 'package:heavenly_homes/screens/pages/checkout_page.dart';
 import 'package:heavenly_homes/screens/pages/contact_designer_page.dart';
 import 'package:heavenly_homes/screens/pages/home.dart';
@@ -14,6 +15,7 @@ import 'package:heavenly_homes/screens/splashes/intro.dart';
 import 'package:heavenly_homes/screens/splashes/splash_screen.dart'; // Ensure this is correct
 
 import 'model/decoration_items.dart';
+import 'model/designer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -82,6 +84,11 @@ class MyApp extends StatelessWidget {
               deliveryCharges: 0.0,
               subtotal: 0.0,
             ),
+        '/chat': (context) {
+          final designer =
+              ModalRoute.of(context)!.settings.arguments as Designer;
+          return ChatPage(designer: designer);
+        },
       },
     );
   }
