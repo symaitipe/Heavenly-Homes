@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "194849413888",
+    "project_id": "homesapp-797a9",
+    "storage_bucket": "homesapp-797a9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:194849413888:android:ad3b35a1e1a6de67dd31e5",
+        "android_client_info": {
+          "package_name": "com.nero.heavenly_homes"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANrw-mS5r1_0OQJF1FqP0mQki-1NiOjyc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
