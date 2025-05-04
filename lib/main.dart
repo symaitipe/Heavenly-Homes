@@ -1,33 +1,41 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:google_fonts/google_fonts.dart'; // *** ADDED IMPORT ***
+
+// Screen Imports (ensure paths are correct for your project)
+import 'package:heavenly_homes/screens/pages/account.dart'; // *** Ensure this file exists at this path ***
 import 'package:heavenly_homes/screens/authenticates/login.dart';
 import 'package:heavenly_homes/screens/pages/best_bids.dart';
-import 'package:heavenly_homes/screens/pages/cart.dart'; // Corrected CartPage import if needed
+import 'package:heavenly_homes/screens/pages/cart.dart';
 import 'package:heavenly_homes/screens/pages/category_selection.dart';
 import 'package:heavenly_homes/screens/pages/chat_page.dart';
-// import 'package:heavenly_homes/screens/pages/checkout_page.dart'; // No longer needed for routes map
 import 'package:heavenly_homes/screens/pages/contact_designer_page.dart';
 import 'package:heavenly_homes/screens/pages/home.dart';
 import 'package:heavenly_homes/screens/pages/order_details.dart';
-// import 'package:heavenly_homes/screens/pages/order_processing_page.dart'; // No longer needed for routes map
 import 'package:heavenly_homes/screens/splashes/get_started_screen.dart';
 import 'package:heavenly_homes/screens/splashes/intro.dart';
 import 'package:heavenly_homes/screens/splashes/splash_screen.dart';
 
-import 'model/decoration_items.dart'; // Assuming paths are correct
-import 'model/designer.dart';         // Assuming paths are correct
+// Model Imports (ensure paths are correct)
+import 'package:heavenly_homes/model/decoration_items.dart';
+import 'package:heavenly_homes/model/designer.dart';
+
+// --- Your Firebase Options ---
+// IMPORTANT: Replace placeholders with your actual Firebase config values.
+// Consider using Firebase CLI or environment variables for security.
+const firebaseOptions = FirebaseOptions(
+    apiKey: "AIzaSyANrw-mS5r1_0OQJF1FqP0mQki-1NiOjyc", // Replace if necessary
+    appId: "1:194849413888:android:ad3b35a1e1a6de67dd31e5", // Replace if necessary
+    messagingSenderId: "194849413888", // Replace if necessary
+    projectId: "homesapp-797a9", // Replace if necessary
+);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Consider using Firebase CLI for configuration or environment variables
-  // instead of hardcoding keys directly in the source code.
+  // Initialize Firebase
   await Firebase.initializeApp(
-    options: FirebaseOptions(
-      apiKey: "AIzaSyANrw-mS5r1_0OQJF1FqP0mQki-1NiOjyc", // IMPORTANT: Keep keys secure
-      appId: "1:194849413888:android:ad3b35a1e1a6de67dd31e5",
-      messagingSenderId: "194849413888",
-      projectId: "homesapp-797a9",
-    ),
+    options: firebaseOptions, // Use the options defined above
   );
   runApp(const MyApp());
 }
@@ -41,9 +49,24 @@ class MyApp extends StatelessWidget {
       title: 'Heavenly Homes',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue, // Consider defining a more specific theme
-        fontFamily: 'Poppins', // Example: Set default font if used widely
+        primarySwatch: Colors.blue, // Base color scheme
+        fontFamily: 'Poppins', // Default font
         visualDensity: VisualDensity.adaptivePlatformDensity,
+        brightness: Brightness.dark, // Use a dark theme base
+        scaffoldBackgroundColor: Colors.grey[900], // Dark background
+        appBarTheme: AppBarTheme(
+           backgroundColor: const Color(0xFF232323), // Consistent AppBar color
+           elevation: 0,
+           iconTheme: const IconThemeData(color: Colors.white),
+           // *** Corrected: Use GoogleFonts here ***
+           titleTextStyle: GoogleFonts.poppins(color: Colors.white, fontSize: 18),
+        ),
+         // *** Corrected: Use GoogleFonts here ***
+        textTheme: GoogleFonts.poppinsTextTheme(Theme.of(context).textTheme).apply(
+           bodyColor: Colors.white, // Default text color
+           displayColor: Colors.white,
+        ),
+        // Add other theme customizations if needed
       ),
       initialRoute: '/splash', // Start with the splash screen
       routes: {
@@ -56,25 +79,26 @@ class MyApp extends StatelessWidget {
         '/contact_designer': (context) => const ContactDesignerPage(),
         '/category_selection': (context) => const CategorySelectionPage(),
         '/best_bids': (context) => const BestBidsPage(),
-        '/cart': (context) => const CartPage(), // Keep if navigating by name is intended
+        '/cart': (context) => const CartPage(),
+        // *** Route for Account Page (ensure AccountPage class exists) ***
+        '/account': (context) => const AccountPage(),
 
-        // --- Routes that often require arguments (Handle with care) ---
+        // --- Routes that require arguments (Keep your existing logic) ---
         '/order_detail': (context) {
-          // It's generally better to navigate to detail pages using
-          // Navigator.push with arguments rather than defining them here
-          // with dummy data or complex ModalRoute logic if possible.
-          // This example assumes arguments might be passed, otherwise it uses defaults.
+          // Ensure arguments are handled correctly
           final arguments = ModalRoute.of(context)?.settings.arguments;
           DecorationItem item;
           String orderId = '';
           String userId = '';
 
           if (arguments is Map<String, dynamic>) {
-             item = arguments['item'] as DecorationItem? ?? _getDefaultDecorationItem();
+             item = arguments['item'] as DecorationItem? ?? _getDefaultDecorationItem(); // Use helper for default
              orderId = arguments['orderId'] as String? ?? '';
              userId = arguments['userId'] as String? ?? '';
           } else {
-             item = _getDefaultDecorationItem();
+             // Handle cases where arguments might not be a map or are null
+             item = _getDefaultDecorationItem(); // Fallback to default
+             print("Warning: No or invalid arguments passed to /order_detail route.");
           }
 
           return OrderDetailPage(
@@ -85,36 +109,30 @@ class MyApp extends StatelessWidget {
         },
 
         '/chat': (context) {
-          // Ensure arguments are always passed correctly when navigating to '/chat'
+          // Ensure arguments are handled correctly
           final arguments = ModalRoute.of(context)?.settings.arguments;
           if (arguments is Designer) {
              return ChatPage(designer: arguments);
           } else {
-             // Handle error: navigate back or show an error page
              print("Error: Incorrect arguments passed to /chat route.");
-             // Example: Return a simple error view or navigate back
-             return Scaffold(appBar: AppBar(), body: const Center(child: Text("Error loading chat.")));
-             // Or Navigator.pop(context); return const SizedBox.shrink(); // Avoid building invalid page
+             // Provide a fallback or error screen
+             return Scaffold(appBar: AppBar(title: const Text("Error")), body: const Center(child: Text("Could not load chat.")));
           }
         },
-
-        // --- REMOVED Routes ---
-        // '/checkout': Route removed because it requires dynamic data passed via Navigator.push()
-        // '/order_processing': Route removed because it requires dynamic data passed via Navigator.pushReplacement()
-
       },
       // Optional: Handle unknown routes
       onUnknownRoute: (settings) {
-        return MaterialPageRoute(builder: (_) => const UndefinedRouteScreen()); // Create a screen for undefined routes
+        return MaterialPageRoute(builder: (_) => const UndefinedRouteScreen());
       },
     );
   }
 
    // Helper function to provide default item for OrderDetailPage route if needed
    static DecorationItem _getDefaultDecorationItem() {
+     // Provide sensible defaults
      return DecorationItem(
-       id: '', name: 'Unknown Item', description: '', imageUrl: '', price: 0.0,
-       rating: 0.0, reviewCount: 0, availableQty: 0, category: '',
+       id: 'default_id', name: 'Unknown Item', description: 'No details available', imageUrl: '', price: 0.0,
+       rating: 0.0, reviewCount: 0, availableQty: 0, category: 'Unknown',
        isDiscounted: false, subImages: [],
      );
    }
