@@ -116,7 +116,7 @@ class _HomePageState extends State<HomePage> {
               'projectId': '${designerId}_project_$index', // Construct ID
             });
           } catch (e) {
-            print("Error parsing project $index for $designerId: $e");
+            //print("Error parsing project $index for $designerId: $e");
           }
         }
       }
@@ -128,7 +128,7 @@ class _HomePageState extends State<HomePage> {
         try {
           return DecorationItem.fromFirestore(doc.data(), doc.id);
         } catch (e) {
-          print("Error parsing item ${doc.id}: $e");
+          //print("Error parsing item ${doc.id}: $e");
           return null;
         }
       }).whereType<DecorationItem>().toList();
@@ -142,7 +142,7 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (e) {
-      print('Error fetching content: $e');
+      //print('Error fetching content: $e');
       if (mounted) {
         setState(() => _isLoadingContent = false);
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to load content.")));
@@ -154,10 +154,12 @@ class _HomePageState extends State<HomePage> {
     if (_searchFocusNode.hasFocus && _searchController.text.isNotEmpty) {
       _updateSuggestions();
     } else if (_searchController.text.isEmpty) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _suggestions = [];
         _showSuggestions = false;
       });
+      }
     }
   }
 
@@ -208,11 +210,13 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (e) {
-      print('Error fetching suggestions: $e');
-      if (mounted) setState(() {
+     // print('Error fetching suggestions: $e');
+      if (mounted) {
+        setState(() {
         _suggestions = [];
         _showSuggestions = false;
       });
+      }
     }
   }
 
@@ -384,7 +388,7 @@ class _HomePageState extends State<HomePage> {
                 focusNode: _searchFocusNode,
                 style: GoogleFonts.poppins(color: Colors.black87, fontSize: 14),
                 decoration: InputDecoration(
-                  hintText: 'Search designers, items...',
+                  hintText: 'Search Items',
                   hintStyle: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 14),
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
                   suffixIcon: _searchController.text.isNotEmpty
