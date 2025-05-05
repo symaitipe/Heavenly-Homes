@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image_picker/image_picker.dart'; // For picking images
-import 'dart:io'; // For File handling
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../model/user_model.dart';
-import '../../services/auth_services.dart'; // For sign out
+import '../../services/auth_services.dart';
+import 'order_history_page.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -20,7 +21,6 @@ class _AccountPageState extends State<AccountPage> {
   final ImagePicker _picker = ImagePicker();
   bool _isSaving = false;
 
-  // Controllers for editing profile details
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _phoneNumberController = TextEditingController();
@@ -30,6 +30,15 @@ class _AccountPageState extends State<AccountPage> {
   void initState() {
     super.initState();
     _fetchUserData();
+  }
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _addressController.dispose();
+    _phoneNumberController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchUserData() async {
@@ -44,11 +53,10 @@ class _AccountPageState extends State<AccountPage> {
          setState(() {
            _userModel = userDetails;
            _isLoading = false;
-           // Initialize controllers with user data
            _fullNameController.text = _userModel?.displayName ?? '';
            _addressController.text = _userModel?.address ?? '';
            _phoneNumberController.text = _userModel?.phoneNumber ?? '';
-           _passwordController.text = '••••••••'; // Placeholder for password
+           _passwordController.text = '••••••••';
          });
       }
     } else {
@@ -114,7 +122,12 @@ class _AccountPageState extends State<AccountPage> {
       ),
       builder: (context) => SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 30,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
@@ -136,18 +149,28 @@ class _AccountPageState extends State<AccountPage> {
                   decoration: BoxDecoration(
                     color: Colors.grey[200],
                     borderRadius: BorderRadius.circular(10),
+                    border: _image == null ? Border.all(color: Colors.grey, width: 1) : null,
                   ),
                   child: _image != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(10),
                           child: Image.file(_image!, fit: BoxFit.cover),
                         )
-                      : const Icon(Icons.person, color: Colors.black, size: 40),
+                      : _userModel?.photoUrl != null && _userModel!.photoUrl!.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.network(
+                                  _userModel!.photoUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (c, e, s) => const Icon(Icons.person, color: Colors.black, size: 40)
+                              ),
+                            )
+                          : const Icon(Icons.person, color: Colors.black, size: 40),
                 ),
               ),
               const SizedBox(height: 16),
               Text(
-                _userModel?.displayName ?? '',
+                _userModel?.displayName ?? 'N/A',
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w500,
                   fontSize: 18,
@@ -155,37 +178,24 @@ class _AccountPageState extends State<AccountPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              _buildProfileField('Full Name', _fullNameController),
-              _buildProfileField('Address', _addressController),
-              _buildProfileField('Phone Number', _phoneNumberController),
-              _buildProfileField('Password', _passwordController, obscureText: true),
+              _buildProfileField('Full Name', _fullNameController, enabled: true),
+              _buildProfileField('Address', _addressController, enabled: true),
+              _buildProfileField('Phone Number', _phoneNumberController, enabled: true),
+              _buildProfileField('Password', _passwordController, obscureText: true, enabled: true),
               const SizedBox(height: 20),
-              GestureDetector(
-                onTap: _editProfileDetails,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: Text(
-                    'Change details',
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w400,
-                      fontStyle: FontStyle.italic,
-                      fontSize: 12,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
+               Text(
+                 'Edit the fields above and click "Save" to update.',
+                 style: GoogleFonts.poppins(
+                   fontWeight: FontWeight.w400,
+                   fontStyle: FontStyle.italic,
+                   fontSize: 12,
+                   color: Colors.black54,
+                 ),
+                 textAlign: TextAlign.center,
+               ),
               const SizedBox(height: 30),
               ElevatedButton(
-                onPressed: () async {
-                  // Save profile data
-                  await _saveProfileData();
-                  if (mounted) Navigator.pop(context);
-                },
+                onPressed: _isSaving ? null : _saveProfileData,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
                   shape: RoundedRectangleBorder(
@@ -193,7 +203,7 @@ class _AccountPageState extends State<AccountPage> {
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                 ),
-                child: _isSaving 
+                child: _isSaving
                     ? const SizedBox(
                         width: 20,
                         height: 20,
@@ -211,6 +221,7 @@ class _AccountPageState extends State<AccountPage> {
                         ),
                       ),
               ),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -218,7 +229,7 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-  Widget _buildProfileField(String label, TextEditingController controller, {bool obscureText = false}) {
+  Widget _buildProfileField(String label, TextEditingController controller, {bool obscureText = false, bool enabled = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -227,67 +238,116 @@ class _AccountPageState extends State<AccountPage> {
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w500,
             fontSize: 16,
-            color: Colors.black,
+            color: Colors.black87,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           obscureText: obscureText,
+          enabled: enabled,
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white,
+            fillColor: enabled ? Colors.grey[100] : Colors.grey[200],
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+             enabledBorder: OutlineInputBorder(
+               borderRadius: BorderRadius.circular(12),
+               borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+             ),
+            disabledBorder: OutlineInputBorder(
+               borderRadius: BorderRadius.circular(12),
+               borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.blueAccent, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
           ),
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w400,
             fontSize: 16,
             color: Colors.black,
           ),
+          readOnly: !enabled,
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
       ],
     );
   }
 
   Future<void> _saveProfileData() async {
+    if (_userModel == null || !mounted) return;
+
     setState(() => _isSaving = true);
-    
+
     try {
       final firebaseUser = FirebaseAuth.instance.currentUser;
-      if (firebaseUser != null && _userModel != null) {
-        // Update user model with new values
-        _userModel!.updateFromDisplayName(_fullNameController.text);
-        _userModel!.address = _addressController.text;
-        _userModel!.phoneNumber = _phoneNumberController.text;
-        
-        // Save image if changed
+      if (firebaseUser != null) {
+        _userModel!.updateFromDisplayName(_fullNameController.text.trim());
+        _userModel!.address = _addressController.text.trim();
+        _userModel!.phoneNumber = _phoneNumberController.text.trim();
+
+        final newPassword = _passwordController.text.trim();
+        if (newPassword.isNotEmpty && newPassword != '••••••••') {
+           try {
+             await firebaseUser.updatePassword(newPassword);
+             print("Password updated successfully.");
+             if (mounted) {
+                 ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Password updated successfully."), backgroundColor: Colors.orangeAccent)
+                );
+             }
+           } on FirebaseAuthException catch (e) {
+              print("Firebase Auth Error updating password: ${e.code} - ${e.message}");
+              String errorMessage = "Failed to update password.";
+              if (e.code == 'requires-recent-login') {
+                 errorMessage = "Please log out and log in again to update your password.";
+              } else if (e.message != null) {
+                 errorMessage = "Error updating password: ${e.message}";
+              }
+              if (mounted) {
+                 ScaffoldMessenger.of(context).showSnackBar(
+                   SnackBar(content: Text(errorMessage), backgroundColor: Colors.red)
+                 );
+              }
+           } catch (e) {
+              print("Unexpected error updating password: $e");
+               if (mounted) {
+                 ScaffoldMessenger.of(context).showSnackBar(
+                   SnackBar(content: Text("Unexpected error updating password: ${e.toString()}"), backgroundColor: Colors.red)
+                 );
+              }
+           }
+        } else if (newPassword == '••••••••') {
+        } else if (newPassword.isEmpty) {
+            if (mounted) {
+                 ScaffoldMessenger.of(context).showSnackBar(
+                   const SnackBar(content: Text("Password cannot be empty if changing."), backgroundColor: Colors.orange)
+                 );
+              }
+        }
+
         if (_image != null) {
-          // Upload image to Firebase Storage and get URL
-          // This is a placeholder - implement your image upload functionality
-          // String imageUrl = await uploadImageToStorage(_image!, firebaseUser.uid);
-          // _userModel!.photoUrl = imageUrl;
+          // Implement image upload logic here
         }
-        
-        // Save updated user data to Firestore
+
+        if (_userModel!.displayName != firebaseUser.displayName) {
+             await firebaseUser.updateDisplayName(_userModel!.displayName);
+             print("Firebase Auth display name updated.");
+        }
+
         await _userModel!.saveToFirestore();
-        
-        // Update display name in Firebase Auth
-        await firebaseUser.updateDisplayName(_fullNameController.text);
-        
-        // Handle password change if needed
-        if (_passwordController.text != '••••••••') {
-          await firebaseUser.updatePassword(_passwordController.text);
-        }
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Profile updated successfully"), backgroundColor: Colors.green)
+            const SnackBar(content: Text("Profile updated successfully!"), backgroundColor: Colors.green)
           );
+          _fetchUserData();
+          Navigator.pop(context);
         }
       }
     } catch (e) {
@@ -302,16 +362,6 @@ class _AccountPageState extends State<AccountPage> {
         setState(() => _isSaving = false);
       }
     }
-  }
-
-  void _editProfileDetails() {
-    // This now just informs the user they can edit the fields directly
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Edit your details and click Save to update your profile"),
-        backgroundColor: Colors.black,
-      ),
-    );
   }
 
   @override
@@ -330,15 +380,19 @@ class _AccountPageState extends State<AccountPage> {
            ),
          ],
       ),
-      backgroundColor: Colors.white, // Set background color to white
+      backgroundColor: Colors.white,
       body: RefreshIndicator(
         onRefresh: _fetchUserData,
         color: Colors.white,
         backgroundColor: Colors.grey[800],
         child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Center(
             child: _isLoading
-                ? const CircularProgressIndicator(color: Colors.black)
+                ? const Padding(
+                    padding: EdgeInsets.all(40.0),
+                    child: CircularProgressIndicator(color: Colors.black),
+                  )
                 : _userModel == null
                     ? Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -364,8 +418,6 @@ class _AccountPageState extends State<AccountPage> {
                             decoration: BoxDecoration(
                               color: const Color(0xFF232323),
                               borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(30),
-                                topRight: Radius.circular(30),
                                 bottomLeft: Radius.circular(40),
                                 bottomRight: Radius.circular(40),
                               ),
@@ -381,24 +433,32 @@ class _AccountPageState extends State<AccountPage> {
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                GestureDetector(
-                                  onTap: _pickImage,
-                                  child: Container(
-                                    width: 101,
-                                    height: 101,
-                                    margin: const EdgeInsets.only(top: 44), // Adjusted position
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: _image != null
-                                        ? ClipRRect(
-                                            borderRadius: BorderRadius.circular(10),
-                                            child: Image.file(_image!, fit: BoxFit.cover),
-                                          )
-                                        : const Icon(Icons.person, color: Colors.black, size: 40),
-                                  ),
-                                ),
+                                Container(
+                                   width: 101,
+                                   height: 101,
+                                   margin: const EdgeInsets.only(top: 20),
+                                   decoration: BoxDecoration(
+                                     color: Colors.white,
+                                     borderRadius: BorderRadius.circular(10),
+                                     border: _userModel?.photoUrl == null && _image == null ? Border.all(color: Colors.grey, width: 1) : null,
+                                   ),
+                                   child: _image != null
+                                       ? ClipRRect(
+                                           borderRadius: BorderRadius.circular(10),
+                                           child: Image.file(_image!, fit: BoxFit.cover),
+                                         )
+                                       : (_userModel?.photoUrl != null && _userModel!.photoUrl!.isNotEmpty
+                                           ? ClipRRect(
+                                               borderRadius: BorderRadius.circular(10),
+                                               child: Image.network(
+                                                   _userModel!.photoUrl!,
+                                                   fit: BoxFit.cover,
+                                                   errorBuilder: (c, e, s) => const Icon(Icons.person, color: Colors.black, size: 40)
+                                               ),
+                                             )
+                                           : const Icon(Icons.person, color: Colors.black, size: 40)
+                                         ),
+                                 ),
                                 const SizedBox(height: 16),
                                 Text(
                                   _userModel!.displayName,
@@ -415,53 +475,75 @@ class _AccountPageState extends State<AccountPage> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.start, // Align to the left
-                            children: [
-                              Column(
-                                children: [
-                                  GestureDetector(
-                                    onTap: _showProfileDetails,
-                                    child: Container(
-                                      width: 89,
-                                      height: 89,
-                                      margin: const EdgeInsets.only(left: 21), // Adjusted position
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(10),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(0.1),
-                                            blurRadius: 4,
-                                            offset: const Offset(0, 2),
-                                          )
-                                        ]
-                                      ),
-                                      child: const Icon(Icons.person, color: Colors.black, size: 40),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Container(
-                                    margin: const EdgeInsets.only(left: 21),
-                                    child: Text(
-                                      'Profile',
-                                      style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 14,
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              // Add more buttons here if needed
-                            ],
+                          const SizedBox(height: 30),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildAccountButton(
+                                  icon: Icons.person,
+                                  label: 'Profile',
+                                  onTap: _showProfileDetails,
+                                ),
+                                _buildAccountButton(
+                                  icon: Icons.history,
+                                  label: 'Order History',
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const OrderHistoryPage()),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAccountButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                )
+              ]
+            ),
+            child: Icon(icon, color: Colors.black, size: 35),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w500,
+              fontSize: 12,
+              color: Colors.black,
+            ),
+          ),
+        ],
       ),
     );
   }
