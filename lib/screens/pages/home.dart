@@ -1,17 +1,16 @@
-// lib/screens/pages/home.dart
+
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-// Adjust import paths if necessary
 import 'package:heavenly_homes/screens/pages/project_detail_page.dart';
 import '../../model/decoration_items.dart';
 import '../../model/user_model.dart';
 import '../../services/auth_services.dart';
 import 'package:heavenly_homes/screens/pages/item_details.dart';
 import 'package:heavenly_homes/screens/pages/search_results.dart';
-import '../../model/designer.dart'; // Assuming Project model is here
+import '../../model/designer.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

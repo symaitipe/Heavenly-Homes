@@ -86,7 +86,7 @@ class BestBidsPage extends StatelessWidget {
                             child: ClipRRect(
                               borderRadius: const BorderRadius.vertical(
                                   top: Radius.circular(12)),
-                              child: Image.network(
+                              child: Image.asset(
                                 item.imageUrl,
                                 fit: BoxFit.cover,
                                 width: double.infinity,

@@ -46,6 +46,8 @@ dependencies:
   google_fonts: ^6.1.0
   image_picker: ^0.8.6
   intl: ^0.18.0
+  flutter_stripe: ^11.5.0
+  http: ^1.4.0
 
 dev_dependencies:
   flutter_test:
@@ -69,8 +71,10 @@ flutter:
     - assets/logos/
     - assets/chat_images/
     - assets/decoration-items/living-area/p1/
-    - assets/decoration-items/living-area/p4/
     - assets/decoration-items/bed-room/p2/
+    - assets/decoration-items/kitchen/p3/
+    - assets/decoration-items/living-area/p4/
+
     - assets/decoration-items/categories/
     - assets/interior-designs/damitha/luxury/office/
     - assets/interior-designs/damitha/modern/home1/
