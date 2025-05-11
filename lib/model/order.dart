@@ -9,6 +9,7 @@ class OrderModel {
   final String deliveryAddress;
   final String paymentMethod;
   final List<CartItem> items;
+  final String status;
 
   OrderModel({
     required this.orderId,
@@ -18,11 +19,12 @@ class OrderModel {
     required this.deliveryAddress,
     required this.paymentMethod,
     required this.items,
+    this.status = 'pending',
   });
 
   static Future<OrderModel> fromFirestore(DocumentSnapshot doc) async {
     Map<String, dynamic>? data = doc.data() as Map<String, dynamic>?;
-    print("Firestore data for order ${doc.id}: $data"); // Debug print to inspect raw data
+    print("Firestore data for order ${doc.id}: $data");
 
     if (data == null) {
       print("Error: Order document data is null for doc ID: ${doc.id}");
@@ -34,13 +36,14 @@ class OrderModel {
         deliveryAddress: 'N/A',
         paymentMethod: 'N/A',
         items: [],
+        status: data?['status'] as String? ?? 'pending'
       );
     }
 
     // Handle 'createdAt' field (it's a Timestamp)
     Timestamp createdAt = data['createdAt'] as Timestamp? ?? Timestamp.now();
 
-    // Fetch items from the 'items' subcollection
+    // Fetch items from the 'items' sub collection
     List<CartItem> orderItems = [];
     try {
       QuerySnapshot itemsSnapshot = await FirebaseFirestore.instance
@@ -57,7 +60,7 @@ class OrderModel {
           decorationItemId: itemData['decorationItemId'] ?? '',
           name: itemData['itemName'] ?? 'Unknown Item',
           imageUrl: itemData['imageUrl'] ?? 'assets/images/default_item.png',
-          price: (itemData['price'] as num?)?.toDouble() ?? 0.0,
+          price: (itemData['itemPrice'] as num?)?.toDouble() ?? 0.0,
           discountedPrice: (itemData['discountedPrice'] as num?)?.toDouble(),
           quantity: (itemData['quantity'] as num?)?.toInt() ?? 1,
         );
