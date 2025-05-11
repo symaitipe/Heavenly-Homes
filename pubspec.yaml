@@ -46,6 +46,8 @@ dependencies:
   google_fonts: ^6.1.0
   image_picker: ^0.8.6
   intl: ^0.18.0
+  flutter_stripe: ^11.5.0
+  http: ^1.4.0
 
 dev_dependencies:
   flutter_test:

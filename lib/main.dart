@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:heavenly_homes/constants/service_constants.dart';
 import 'package:heavenly_homes/screens/authenticates/login.dart';
 import 'package:heavenly_homes/screens/pages/best_bids.dart';
 import 'package:heavenly_homes/screens/pages/cart.dart';
@@ -26,6 +28,7 @@ void main() async {
       projectId: "homesapp-797a9",
     ),
   );
+  Stripe.publishableKey = ServiceConstants.publishableKey ;
   runApp(const MyApp());
 }
 
