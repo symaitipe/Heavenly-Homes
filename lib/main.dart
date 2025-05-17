@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // Required for kIsWeb
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:heavenly_homes/constants/service_constants.dart';
@@ -28,7 +29,12 @@ void main() async {
       projectId: "homesapp-797a9",
     ),
   );
-  Stripe.publishableKey = ServiceConstants.publishableKey ;
+
+  // Only initialize Stripe on mobile platforms
+  if (!kIsWeb) {
+    Stripe.publishableKey = ServiceConstants.publishableKey;
+  }
+
   runApp(const MyApp());
 }
 
@@ -64,26 +70,26 @@ class MyApp extends StatelessWidget {
           String userId = '';
 
           if (arguments is Map<String, dynamic>) {
-             item = arguments['item'] as DecorationItem? ?? _getDefaultDecorationItem();
-             orderId = arguments['orderId'] as String? ?? '';
-             userId = arguments['userId'] as String? ?? '';
+            item = arguments['item'] as DecorationItem? ?? _getDefaultDecorationItem();
+            orderId = arguments['orderId'] as String? ?? '';
+            userId = arguments['userId'] as String? ?? '';
           } else {
-             item = _getDefaultDecorationItem();
+            item = _getDefaultDecorationItem();
           }
 
           return OrderDetailPage(
-              item: item,
-              orderId: orderId,
-              userId: userId,
-            );
+            item: item,
+            orderId: orderId,
+            userId: userId,
+          );
         },
         '/chat': (context) {
           final arguments = ModalRoute.of(context)?.settings.arguments;
           if (arguments is Designer) {
-             return ChatPage(designer: arguments);
+            return ChatPage(designer: arguments);
           } else {
-             print("Error: Incorrect arguments passed to /chat route.");
-             return Scaffold(appBar: AppBar(), body: const Center(child: Text("Error loading chat.")));
+            print("Error: Incorrect arguments passed to /chat route.");
+            return Scaffold(appBar: AppBar(), body: const Center(child: Text("Error loading chat.")));
           }
         },
       },
