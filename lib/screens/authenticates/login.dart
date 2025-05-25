@@ -59,6 +59,12 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  void _navigateToAdminLogin() {
+    if (mounted) {
+      Navigator.pushNamed(context, '/adminlogin');
+    }
+  }
+
   void _showError(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -166,12 +172,12 @@ class _LoginPageState extends State<LoginPage> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator(color: Colors.white))
             : SafeArea(
-                child: _showLoginForm
-                    ? _buildLoginForm()
-                    : _showSignUpForm
-                        ? _buildSignUpForm()
-                        : _buildInitialScreen(),
-              ),
+          child: _showLoginForm
+              ? _buildLoginForm()
+              : _showSignUpForm
+              ? _buildSignUpForm()
+              : _buildInitialScreen(),
+        ),
       ),
     );
   }
@@ -233,7 +239,26 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: ElevatedButton(
+                onPressed: _navigateToAdminLogin,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  foregroundColor: Colors.white70,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  side: const BorderSide(color: Colors.white70, width: 0.5),
+                  elevation: 0,
+                ),
+                child: Text('Seller Login', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Row(
