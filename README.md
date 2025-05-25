@@ -6,7 +6,7 @@ Havenly Homes solves the challenges of furniture shopping and interior design by
 -  **Curated furniture catalog** with filters and high-res visuals.  
 -  **Professional designer profiles** with project galleries.  
 -  **Secure checkout** (COD, installments) and order tracking.  
--  **Personalized recommendations** based on user preferences.  
+
 
 ##  Key Features
 
@@ -17,7 +17,7 @@ Havenly Homes solves the challenges of furniture shopping and interior design by
 
 ###  Product Browsing
 - Filter by room type (living room, kitchen, etc.)
-- Sort by price, ratings, and popularity
+- Sort by price
 - High-quality product images
 
 ###  Designer Hub
@@ -32,21 +32,15 @@ Havenly Homes solves the challenges of furniture shopping and interior design by
 
 ###  User Account
 - Order history with tracking status
-- Downloadable receipts and invoices
-
 
 ##  Tech Stack  
 - **Frontend:** Flutter (Dart)  
 - **Backend:** Firebase (Auth, Firestore)   
-- **Maps:** Google Maps API (for designer locations)  
+-  **Payment:** Flutter stripe API 
 
 ##  Getting Started  
 ### Prerequisites  
 - Flutter SDK (>=3.0.0)  
 - Android Studio/VScode  
-- Firebase account  
 
-### Installation  
-1. Clone the repo:  
-   ```bash  
-   git clone https://github.com/your-username/havenly-homes.git  
+
