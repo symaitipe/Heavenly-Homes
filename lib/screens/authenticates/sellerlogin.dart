@@ -41,7 +41,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     setState(() => _isLoading = true);
 
     // Hardcoded admin credentials
-    const adminEmail = 'admin@gmail.com';
+    const adminEmail = 'Seller@gmail.com';
     const adminPassword = '12345678';
 
     try {
@@ -50,13 +50,13 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
 
       if (_emailController.text.trim() == adminEmail &&
           _passwordController.text.trim() == adminPassword) {
-        _showSuccess('Admin login successful!');
+        _showSuccess('Seller login successful!');
         // Navigate to admin dashboard
         if (mounted) {
           Navigator.pushNamedAndRemoveUntil(context, '/admin-dashboard', (route) => false);
         }
       } else {
-        _showError('Invalid admin credentials');
+        _showError('Invalid Seller credentials');
       }
     } catch (e) {
       _showError('An error occurred during login');
@@ -95,7 +95,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                   ),
                   const SizedBox(height: 20),
                   Center(
-                    child: Text('Admin Login',
+                    child: Text('Seller Login',
                       style: GoogleFonts.poppins(
                           fontSize: 40,
                           fontWeight: FontWeight.w500,
@@ -106,10 +106,10 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                   const SizedBox(height: 35),
                   _buildTextField(
                     controller: _emailController,
-                    hintText: 'Admin Email',
+                    hintText: 'Seller Email',
                     keyboardType: TextInputType.emailAddress,
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'Please enter admin email';
+                      if (value == null || value.isEmpty) return 'Please enter Seller email';
                       if (!value.contains('@')) return 'Please enter a valid email';
                       return null;
                     },
@@ -150,7 +150,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                   const SizedBox(height: 30),
                   Center(
                     child: Text(
-                      'For admin access only',
+                      'For Seller access only',
                       style: GoogleFonts.poppins(
                           fontSize: 12,
                           color: Colors.white70

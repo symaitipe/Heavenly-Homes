@@ -254,7 +254,7 @@ class _LoginPageState extends State<LoginPage> {
                   side: const BorderSide(color: Colors.white70, width: 0.5),
                   elevation: 0,
                 ),
-                child: Text('Admin Login', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
+                child: Text('Seller Login', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
               ),
             ),
           ),

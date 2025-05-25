@@ -426,7 +426,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Admin Dashboard'),
+          title: const Text('Seller Dashboard'),
           centerTitle: true,
           backgroundColor: Colors.black,
           foregroundColor: Colors.white,
@@ -450,7 +450,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             tabs: const [
               Tab(text: 'Orders'),
               Tab(text: 'Decoration Items'),
-              Tab(text: 'Designers'),
+              // Tab(text: 'Designers'),
             ],
             onTap: (index) {
               setState(() {
