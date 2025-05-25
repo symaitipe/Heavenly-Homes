@@ -432,6 +432,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           foregroundColor: Colors.white,
           actions: [
             IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/login',
+                      (route) => false,
+                );
+              },
+            ),
+            IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _fetchData,
             ),
