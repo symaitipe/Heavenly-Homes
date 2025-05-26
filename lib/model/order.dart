@@ -19,7 +19,7 @@ class OrderModel {
     required this.deliveryAddress,
     required this.paymentMethod,
     required this.items,
-    this.status = 'pending',
+    required this.status,
   });
 
   static Future<OrderModel> fromFirestore(DocumentSnapshot doc) async {
@@ -36,7 +36,7 @@ class OrderModel {
         deliveryAddress: 'N/A',
         paymentMethod: 'N/A',
         items: [],
-        status: data?['status'] as String? ?? 'pending'
+        status: 'pending',
       );
     }
 
@@ -77,6 +77,7 @@ class OrderModel {
       deliveryAddress: data['address'] as String? ?? 'Not provided',
       paymentMethod: data['paymentMethod'] as String? ?? 'Not specified',
       items: orderItems,
+      status: data['status'] as String? ?? 'pending', // Explicitly map status
     );
   }
 }
