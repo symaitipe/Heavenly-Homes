@@ -13,47 +13,25 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool _isLoading = true;
   List<Map<String, dynamic>> _orders = [];
-  List<Map<String, dynamic>> _decorationItems = [];
-  List<Map<String, dynamic>> _designers = [];
+  List<Map<String, dynamic>> _products = [];
   int _currentTabIndex = 0;
 
-  // Form controllers for decoration items
-  final _addItemFormKey = GlobalKey<FormState>();
+  // Form controllers for adding products
+  final _addProductFormKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _categoryController = TextEditingController();
   final _quantityController = TextEditingController();
   final _imageUrlController = TextEditingController();
-  final _categoryImageController = TextEditingController();
   bool _isDiscounted = false;
-  List<String> _subImages = [];
-  final _subImageController = TextEditingController();
+  final _discountPriceController = TextEditingController();
 
-  // Form controllers for designers
-  final _addDesignerFormKey = GlobalKey<FormState>();
-  final _designerNameController = TextEditingController();
-  final _designerAboutController = TextEditingController();
-  final _designerAddressController = TextEditingController();
-  final _designerEmailController = TextEditingController();
-  final _designerImageUrlController = TextEditingController();
-  final _designerLocationController = TextEditingController();
-  final _designerServicesController = TextEditingController();
-  final _designerPhoneController = TextEditingController();
-  List<String> _designerPhones = [];
-  bool _designerIsAvailable = true;
-  final _designerProjectTitleController = TextEditingController();
-  final _designerProjectCategoryController = TextEditingController();
-  final _designerProjectClientController = TextEditingController();
-  final _designerProjectDescriptionController = TextEditingController();
-  final _designerProjectLocationController = TextEditingController();
-  final _designerProjectPriceController = TextEditingController();
-  final _designerProjectYearController = TextEditingController();
-  final _designerProjectRatingController = TextEditingController();
-  final _designerProjectReviewCountController = TextEditingController();
-  final _designerProjectImageUrlController = TextEditingController();
-  List<String> _designerProjectImages = [];
-  List<Map<String, dynamic>> _designerProjects = [];
+  // Form controllers for updating products
+  final _updateProductFormKey = GlobalKey<FormState>();
+  final _updateQuantityController = TextEditingController();
+  final _updateDiscountPriceController = TextEditingController();
+  bool _updateIsDiscounted = false;
 
   @override
   void initState() {
@@ -64,8 +42,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Future<void> _fetchData() async {
     try {
       final ordersQuery = await _firestore.collection('orders').get();
-      final itemsQuery = await _firestore.collection('decoration_items').get();
-      final designersQuery = await _firestore.collection('designers').get();
+      final productsQuery = await _firestore.collection('decoration_items').get();
 
       setState(() {
         _orders = ordersQuery.docs.map((doc) {
@@ -75,22 +52,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           };
         }).toList();
 
-        _decorationItems = itemsQuery.docs.map((doc) {
-          final data = doc.data();
-          final subImages = data['subImages'] is List
-              ? List<String>.from(data['subImages'] ?? [])
-              : (data['subImages'] != null
-              ? [data['subImages'].toString()]
-              : []);
-
-          return {
-            'id': doc.id,
-            ...data,
-            'subImages': subImages,
-          };
-        }).toList();
-
-        _designers = designersQuery.docs.map((doc) {
+        _products = productsQuery.docs.map((doc) {
           final data = doc.data();
           return {
             'id': doc.id,
@@ -108,13 +70,53 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     }
   }
 
-  Future<void> _deleteItem(String itemId) async {
+  Future<void> _addProduct() async {
+    if (!_addProductFormKey.currentState!.validate()) return;
+
+    try {
+      await _firestore.collection('decoration_items').add({
+        'name': _nameController.text,
+        'price': double.parse(_priceController.text),
+        'description': _descriptionController.text,
+        'category': _categoryController.text,
+        'available_qty': int.parse(_quantityController.text),
+        'imageUrl': _imageUrlController.text,
+        'isDiscounted': _isDiscounted,
+        'discountPrice': _isDiscounted ? double.parse(_discountPriceController.text) : null,
+        'rating': 0,
+        'reviewCount': 0,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // Clear form
+      _addProductFormKey.currentState!.reset();
+      _nameController.clear();
+      _priceController.clear();
+      _descriptionController.clear();
+      _categoryController.clear();
+      _quantityController.clear();
+      _imageUrlController.clear();
+      _discountPriceController.clear();
+      _isDiscounted = false;
+
+      await _fetchData();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Product added successfully!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error adding product: $e')),
+      );
+    }
+  }
+
+  Future<void> _deleteProduct(String productId) async {
     try {
       bool confirmDelete = await showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Confirm Delete'),
-          content: const Text('Are you sure you want to delete this item?'),
+          content: const Text('Are you sure you want to delete this product?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -129,101 +131,117 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       ) ?? false;
 
       if (confirmDelete) {
-        await _firestore.collection('decoration_items').doc(itemId).delete();
+        await _firestore.collection('decoration_items').doc(productId).delete();
 
         setState(() {
-          _decorationItems.removeWhere((item) => item['id'] == itemId);
+          _products.removeWhere((item) => item['id'] == productId);
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Item deleted successfully!')),
+          const SnackBar(content: Text('Product deleted successfully!')),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete item: $e')),
+        SnackBar(content: Text('Failed to delete product: $e')),
       );
       await _fetchData();
     }
   }
 
-  Future<void> _addDecorationItem() async {
-    if (!_addItemFormKey.currentState!.validate()) return;
+  Future<void> _updateProduct(String productId, Map<String, dynamic> currentProduct) async {
+    // Initialize controllers with current values
+    _updateQuantityController.text = currentProduct['available_qty'].toString();
+    _updateIsDiscounted = currentProduct['isDiscounted'] ?? false;
+    _updateDiscountPriceController.text =
+        currentProduct['discountPrice']?.toString() ?? '';
+
+    bool? shouldUpdate = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Update Product: ${currentProduct['name']}'),
+        content: Form(
+          key: _updateProductFormKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _updateQuantityController,
+                  decoration: const InputDecoration(
+                    labelText: 'Available Quantity',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) =>
+                  value!.isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _updateIsDiscounted,
+                      onChanged: (value) {
+                        setState(() {
+                          _updateIsDiscounted = value!;
+                        });
+                      },
+                    ),
+                    const Text('Is Discounted'),
+                  ],
+                ),
+                if (_updateIsDiscounted) ...[
+                  TextFormField(
+                    controller: _updateDiscountPriceController,
+                    decoration: const InputDecoration(
+                      labelText: 'Discount Price',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) =>
+                    value!.isEmpty ? 'Required' : null,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (_updateProductFormKey.currentState!.validate()) {
+                Navigator.pop(context, true);
+              }
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldUpdate != true) return;
 
     try {
-      await _firestore.collection('decoration_items').add({
-        'name': _nameController.text,
-        'price': double.parse(_priceController.text),
-        'description': _descriptionController.text,
-        'category': _categoryController.text,
-        'available_qty': int.parse(_quantityController.text),
-        'imageUrl': _imageUrlController.text,
-        'categoryImage': _categoryImageController.text,
-        'isDiscounted': _isDiscounted,
-        'subImages': _subImages,
-        'rating': 0,
-        'reviewCount': 0,
-        'createdAt': FieldValue.serverTimestamp(),
+      await _firestore.collection('decoration_items').doc(productId).update({
+        'available_qty': int.parse(_updateQuantityController.text),
+        'isDiscounted': _updateIsDiscounted,
+        'discountPrice': _updateIsDiscounted
+            ? double.parse(_updateDiscountPriceController.text)
+            : null,
       });
-
-      _addItemFormKey.currentState!.reset();
-      _nameController.clear();
-      _priceController.clear();
-      _descriptionController.clear();
-      _categoryController.clear();
-      _quantityController.clear();
-      _imageUrlController.clear();
-      _categoryImageController.clear();
-      _subImages.clear();
-      _subImageController.clear();
-      _isDiscounted = false;
 
       await _fetchData();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Item added successfully!')),
+        const SnackBar(content: Text('Product updated successfully!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding item: $e')),
+        SnackBar(content: Text('Error updating product: $e')),
       );
-    }
-  }
-
-  void _addSubImage() {
-    if (_subImageController.text.isNotEmpty) {
-      setState(() {
-        _subImages.add(_subImageController.text);
-        _subImageController.clear();
-      });
-    }
-  }
-
-  void _removeSubImage(int index) {
-    setState(() {
-      _subImages.removeAt(index);
-    });
-  }
-
-  String _formatTimestamp(Timestamp timestamp) {
-    return DateFormat('dd MMM yyyy \'at\' hh:mm a').format(timestamp.toDate());
-  }
-
-  String _formatCurrency(double amount) {
-    return NumberFormat.currency(symbol: 'Rs. ', decimalDigits: 2).format(amount);
-  }
-
-  Color _getStatusColor(String? status) {
-    switch (status?.toLowerCase()) {
-      case 'processing':
-        return Colors.orange;
-      case 'shipped':
-        return Colors.blue;
-      case 'delivered':
-        return Colors.green;
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return Colors.grey;
     }
   }
 
@@ -268,162 +286,33 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  Future<void> _deleteDesigner(String designerId) async {
-    try {
-      bool confirmDelete = await showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Confirm Delete'),
-          content: const Text('Are you sure you want to delete this designer?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        ),
-      ) ?? false;
-
-      if (confirmDelete) {
-        await _firestore.collection('designers').doc(designerId).delete();
-        setState(() {
-          _designers.removeWhere((designer) => designer['id'] == designerId);
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Designer deleted successfully!')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete designer: $e')),
-      );
-      await _fetchData();
-    }
+  String _formatTimestamp(Timestamp timestamp) {
+    return DateFormat('dd MMM yyyy \'at\' hh:mm a').format(timestamp.toDate());
   }
 
-  void _addDesignerPhone() {
-    if (_designerPhoneController.text.isNotEmpty) {
-      setState(() {
-        _designerPhones.add(_designerPhoneController.text);
-        _designerPhoneController.clear();
-      });
-    }
+  String _formatCurrency(double amount) {
+    return NumberFormat.currency(symbol: 'Rs. ', decimalDigits: 2).format(amount);
   }
 
-  void _removeDesignerPhone(int index) {
-    setState(() {
-      _designerPhones.removeAt(index);
-    });
-  }
-
-  void _addDesignerProjectImage() {
-    if (_designerProjectImageUrlController.text.isNotEmpty) {
-      setState(() {
-        _designerProjectImages.add(_designerProjectImageUrlController.text);
-        _designerProjectImageUrlController.clear();
-      });
-    }
-  }
-
-  void _removeDesignerProjectImage(int index) {
-    setState(() {
-      _designerProjectImages.removeAt(index);
-    });
-  }
-
-  void _addDesignerProject() {
-    if (_designerProjectTitleController.text.isNotEmpty &&
-        _designerProjectCategoryController.text.isNotEmpty) {
-      setState(() {
-        _designerProjects.add({
-          'title': _designerProjectTitleController.text,
-          'category': _designerProjectCategoryController.text,
-          'client': _designerProjectClientController.text,
-          'description': _designerProjectDescriptionController.text,
-          'location': _designerProjectLocationController.text,
-          'price': double.tryParse(_designerProjectPriceController.text) ?? 0,
-          'year': int.tryParse(_designerProjectYearController.text) ?? 2023,
-          'rating': int.tryParse(_designerProjectRatingController.text) ?? 0,
-          'reviewCount': int.tryParse(_designerProjectReviewCountController.text) ?? 0,
-          'imageUrl': List.from(_designerProjectImages),
-        });
-
-        // Clear project fields
-        _designerProjectTitleController.clear();
-        _designerProjectCategoryController.clear();
-        _designerProjectClientController.clear();
-        _designerProjectDescriptionController.clear();
-        _designerProjectLocationController.clear();
-        _designerProjectPriceController.clear();
-        _designerProjectYearController.clear();
-        _designerProjectRatingController.clear();
-        _designerProjectReviewCountController.clear();
-        _designerProjectImages.clear();
-        _designerProjectImageUrlController.clear();
-      });
-    }
-  }
-
-  void _removeDesignerProject(int index) {
-    setState(() {
-      _designerProjects.removeAt(index);
-    });
-  }
-
-  Future<void> _addDesigner() async {
-    if (!_addDesignerFormKey.currentState!.validate()) return;
-
-    try {
-      await _firestore.collection('designers').add({
-        'name': _designerNameController.text,
-        'about': _designerAboutController.text,
-        'address': _designerAddressController.text,
-        'email': _designerEmailController.text,
-        'imageUrl': _designerImageUrlController.text,
-        'isAvailable': _designerIsAvailable,
-        'location': _designerLocationController.text,
-        'phoneNumbers': _designerPhones,
-        'projects': _designerProjects,
-        'services': _designerServicesController.text,
-        'rating': 0,
-        'reviewCount': 0,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      // Clear all fields
-      _addDesignerFormKey.currentState!.reset();
-      _designerNameController.clear();
-      _designerAboutController.clear();
-      _designerAddressController.clear();
-      _designerEmailController.clear();
-      _designerImageUrlController.clear();
-      _designerLocationController.clear();
-      _designerServicesController.clear();
-      _designerPhoneController.clear();
-      _designerPhones.clear();
-      _designerProjects.clear();
-      _designerProjectImages.clear();
-      _designerIsAvailable = true;
-
-      await _fetchData();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Designer added successfully!')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding designer: $e')),
-      );
+  Color _getStatusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'processing':
+        return Colors.orange;
+      case 'shipped':
+        return Colors.blue;
+      case 'delivered':
+        return Colors.green;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Seller Dashboard'),
@@ -449,8 +338,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           bottom: TabBar(
             tabs: const [
               Tab(text: 'Orders'),
-              Tab(text: 'Decoration Items'),
-              // Tab(text: 'Designers'),
+              Tab(text: 'Products'),
             ],
             onTap: (index) {
               setState(() {
@@ -570,24 +458,24 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               },
             ),
 
-            // Decoration Items Tab
+            // Products Tab
             SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  // Add New Item Form
+                  // Add New Product Form
                   Card(
                     elevation: 3,
                     margin: const EdgeInsets.only(bottom: 16),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Form(
-                        key: _addItemFormKey,
+                        key: _addProductFormKey,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Add New Decoration Item',
+                              'Add New Product',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -597,7 +485,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             TextFormField(
                               controller: _nameController,
                               decoration: const InputDecoration(
-                                labelText: 'Item Name',
+                                labelText: 'Product Name',
                                 border: OutlineInputBorder(),
                               ),
                               validator: (value) =>
@@ -650,17 +538,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             TextFormField(
                               controller: _imageUrlController,
                               decoration: const InputDecoration(
-                                labelText: 'Main Image URL',
-                                border: OutlineInputBorder(),
-                              ),
-                              validator: (value) =>
-                              value!.isEmpty ? 'Required' : null,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _categoryImageController,
-                              decoration: const InputDecoration(
-                                labelText: 'Category Image URL',
+                                labelText: 'Image URL or Asset Path (e.g., assets/images/product1.jpg)',
                                 border: OutlineInputBorder(),
                               ),
                               validator: (value) =>
@@ -680,55 +558,27 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                 const Text('Is Discounted'),
                               ],
                             ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Sub Images',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _subImageController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Sub Image URL',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                  ),
+                            if (_isDiscounted) ...[
+                              TextFormField(
+                                controller: _discountPriceController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Discount Price',
+                                  border: OutlineInputBorder(),
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.add),
-                                  onPressed: _addSubImage,
-                                ),
-                              ],
-                            ),
-                            if (_subImages.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                children: _subImages
-                                    .asMap()
-                                    .entries
-                                    .map((entry) => Chip(
-                                  label: Text('Image ${entry.key + 1}'),
-                                  onDeleted: () =>
-                                      _removeSubImage(entry.key),
-                                ))
-                                    .toList(),
+                                keyboardType: TextInputType.number,
+                                validator: (value) =>
+                                value!.isEmpty ? 'Required' : null,
                               ),
                             ],
                             const SizedBox(height: 16),
                             ElevatedButton(
-                              onPressed: _addDecorationItem,
+                              onPressed: _addProduct,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.black,
                                 minimumSize: const Size(double.infinity, 50),
                               ),
                               child: const Text(
-                                'Add Item',
+                                'Add Product',
                                 style: TextStyle(color: Colors.white),
                               ),
                             ),
@@ -738,9 +588,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     ),
                   ),
 
-                  // Existing Items List
-                  ..._decorationItems.map((item) => Card(
-                    key: ValueKey('item-${item['id']}'),
+                  // Existing Products List
+                  ..._products.map((product) => Card(
+                    key: ValueKey('product-${product['id']}'),
                     elevation: 3,
                     margin: const EdgeInsets.only(bottom: 16),
                     child: Padding(
@@ -752,7 +602,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                item['name'] ?? 'No Name',
+                                product['name'] ?? 'No Name',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 18,
@@ -760,7 +610,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               ),
                               Chip(
                                 label: Text(
-                                  'Rs. ${item['price']?.toStringAsFixed(2) ?? '0.00'}',
+                                  'Rs. ${product['price']?.toStringAsFixed(2) ?? '0.00'}',
                                   style: const TextStyle(color: Colors.white),
                                 ),
                                 backgroundColor: Colors.green,
@@ -769,79 +619,62 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Category: ${item['category'] ?? 'Uncategorized'}',
+                            'Category: ${product['category'] ?? 'Uncategorized'}',
                             style: const TextStyle(color: Colors.grey),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Available: ${item['available_qty'] ?? 0}',
+                            'Available: ${product['available_qty'] ?? 0}',
                             style: const TextStyle(fontSize: 14),
                           ),
                           const SizedBox(height: 8),
-                          if (item['imageUrl'] != null && item['imageUrl'].toString().isNotEmpty)
-                            Image.network(
-                              item['imageUrl'].toString(),
+                          if (product['imageUrl'] != null &&
+                              product['imageUrl'].toString().isNotEmpty)
+                            product['imageUrl'].toString().startsWith('http')
+                                ? Image.network(
+                              product['imageUrl'].toString(),
                               height: 150,
                               width: double.infinity,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                height: 150,
-                                color: Colors.grey[200],
-                                child: const Icon(Icons.broken_image),
-                              ),
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                    height: 150,
+                                    color: Colors.grey[200],
+                                    child: const Icon(Icons.broken_image),
+                                  ),
+                            )
+                                : Image.asset(
+                              product['imageUrl'].toString(),
+                              height: 150,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                    height: 150,
+                                    color: Colors.grey[200],
+                                    child: const Icon(Icons.broken_image),
+                                  ),
                             ),
                           const SizedBox(height: 12),
                           Text(
-                            item['description'] ?? 'No description available',
+                            product['description'] ?? 'No description available',
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontSize: 14),
                           ),
                           const SizedBox(height: 12),
-                          if (item['subImages'] != null && (item['subImages'] as List).isNotEmpty)
-                            SizedBox(
-                              height: 100,
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: (item['subImages'] as List).length,
-                                itemBuilder: (context, index) {
-                                  final subImage = (item['subImages'] as List)[index]?.toString() ?? '';
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: subImage.isNotEmpty
-                                        ? Image.network(
-                                      subImage,
-                                      height: 100,
-                                      width: 100,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => Container(
-                                        width: 100,
-                                        color: Colors.grey[200],
-                                        child: const Icon(Icons.broken_image),
-                                      ),
-                                    )
-                                        : Container(
-                                      width: 100,
-                                      color: Colors.grey[200],
-                                      child: const Icon(Icons.broken_image),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          const SizedBox(height: 12),
                           Row(
                             children: [
                               const Icon(Icons.star, color: Colors.amber, size: 16),
                               Text(
-                                ' ${item['rating']?.toStringAsFixed(1) ?? '0.0'} (${item['reviewCount'] ?? 0} reviews)',
+                                ' ${product['rating']?.toStringAsFixed(1) ?? '0.0'} (${product['reviewCount'] ?? 0} reviews)',
                                 style: const TextStyle(fontSize: 14),
                               ),
                               const Spacer(),
-                              if (item['isDiscounted'] == true)
-                                const Text(
-                                  'DISCOUNTED',
-                                  style: TextStyle(
+                              if (product['isDiscounted'] == true)
+                                Text(
+                                  'Discount: Rs. ${product['discountPrice']?.toStringAsFixed(2) ?? '0.00'}',
+                                  style: const TextStyle(
                                     color: Colors.red,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -853,596 +686,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () => _deleteItem(item['id']),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  )),
-                ],
-              ),
-            ),
-
-            // Designers Tab
-            SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // Add New Designer Form
-                  Card(
-                    elevation: 3,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Form(
-                        key: _addDesignerFormKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Add New Designer',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _designerNameController,
-                              decoration: const InputDecoration(
-                                labelText: 'Designer Name',
-                                border: OutlineInputBorder(),
-                              ),
-                              validator: (value) =>
-                              value!.isEmpty ? 'Required' : null,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _designerAboutController,
-                              decoration: const InputDecoration(
-                                labelText: 'About Designer',
-                                border: OutlineInputBorder(),
-                              ),
-                              maxLines: 3,
-                              validator: (value) =>
-                              value!.isEmpty ? 'Required' : null,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _designerAddressController,
-                              decoration: const InputDecoration(
-                                labelText: 'Address',
-                                border: OutlineInputBorder(),
-                              ),
-                              validator: (value) =>
-                              value!.isEmpty ? 'Required' : null,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _designerEmailController,
-                              decoration: const InputDecoration(
-                                labelText: 'Email',
-                                border: OutlineInputBorder(),
-                              ),
-                              validator: (value) =>
-                              value!.isEmpty ? 'Required' : null,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _designerImageUrlController,
-                              decoration: const InputDecoration(
-                                labelText: 'Image URL',
-                                border: OutlineInputBorder(),
-                              ),
-                              validator: (value) =>
-                              value!.isEmpty ? 'Required' : null,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _designerLocationController,
-                              decoration: const InputDecoration(
-                                labelText: 'Location',
-                                border: OutlineInputBorder(),
-                              ),
-                              validator: (value) =>
-                              value!.isEmpty ? 'Required' : null,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _designerServicesController,
-                              decoration: const InputDecoration(
-                                labelText: 'Services',
-                                border: OutlineInputBorder(),
-                              ),
-                              validator: (value) =>
-                              value!.isEmpty ? 'Required' : null,
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Checkbox(
-                                  value: _designerIsAvailable,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _designerIsAvailable = value!;
-                                    });
-                                  },
-                                ),
-                                const Text('Is Available'),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Phone Numbers',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _designerPhoneController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Phone Number',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                    keyboardType: TextInputType.phone,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.add),
-                                  onPressed: _addDesignerPhone,
-                                ),
-                              ],
-                            ),
-                            if (_designerPhones.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                children: _designerPhones
-                                    .asMap()
-                                    .entries
-                                    .map((entry) => Chip(
-                                  label: Text(entry.value),
-                                  onDeleted: () =>
-                                      _removeDesignerPhone(entry.key),
-                                ))
-                                    .toList(),
-                              ),
-                            ],
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Projects',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _designerProjectTitleController,
-                              decoration: const InputDecoration(
-                                labelText: 'Project Title',
-                                border: OutlineInputBorder(),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _designerProjectCategoryController,
-                              decoration: const InputDecoration(
-                                labelText: 'Project Category',
-                                border: OutlineInputBorder(),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _designerProjectClientController,
-                              decoration: const InputDecoration(
-                                labelText: 'Client Name',
-                                border: OutlineInputBorder(),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _designerProjectDescriptionController,
-                              decoration: const InputDecoration(
-                                labelText: 'Project Description',
-                                border: OutlineInputBorder(),
-                              ),
-                              maxLines: 3,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _designerProjectLocationController,
-                              decoration: const InputDecoration(
-                                labelText: 'Project Location',
-                                border: OutlineInputBorder(),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _designerProjectPriceController,
-                              decoration: const InputDecoration(
-                                labelText: 'Project Price',
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.number,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _designerProjectYearController,
-                              decoration: const InputDecoration(
-                                labelText: 'Project Year',
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.number,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _designerProjectRatingController,
-                              decoration: const InputDecoration(
-                                labelText: 'Rating (1-5)',
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.number,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _designerProjectReviewCountController,
-                              decoration: const InputDecoration(
-                                labelText: 'Review Count',
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.number,
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Project Images',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _designerProjectImageUrlController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Image URL',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.add),
-                                  onPressed: _addDesignerProjectImage,
-                                ),
-                              ],
-                            ),
-                            if (_designerProjectImages.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                children: _designerProjectImages
-                                    .asMap()
-                                    .entries
-                                    .map((entry) => Chip(
-                                  label: Text('Image ${entry.key + 1}'),
-                                  onDeleted: () =>
-                                      _removeDesignerProjectImage(entry.key),
-                                ))
-                                    .toList(),
-                              ),
-                            ],
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: _addDesignerProject,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                minimumSize: const Size(double.infinity, 40),
-                              ),
-                              child: const Text(
-                                'Add Project',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                            if (_designerProjects.isNotEmpty) ...[
-                              const SizedBox(height: 16),
-                              const Text(
-                                'Added Projects:',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              ..._designerProjects
-                                  .asMap()
-                                  .entries
-                                  .map((entry) => ListTile(
-                                title: Text(entry.value['title']),
-                                subtitle: Text(
-                                    '${entry.value['category']} - ${entry.value['year']}'),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.delete,
-                                      color: Colors.red),
-                                  onPressed: () =>
-                                      _removeDesignerProject(entry.key),
-                                ),
-                              ))
-                                  .toList(),
-                            ],
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _addDesigner,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.black,
-                                minimumSize: const Size(double.infinity, 50),
-                              ),
-                              child: const Text(
-                                'Add Designer',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Existing Designers List
-                  ..._designers.map((designer) => Card(
-                    key: ValueKey('designer-${designer['id']}'),
-                    elevation: 3,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment:
-                            MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                designer['name'] ?? 'No Name',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                              ),
-                              Chip(
-                                label: Text(
-                                  designer['isAvailable'] == true
-                                      ? 'Available'
-                                      : 'Not Available',
-                                  style: const TextStyle(
-                                      color: Colors.white),
-                                ),
-                                backgroundColor:
-                                designer['isAvailable'] == true
-                                    ? Colors.green
-                                    : Colors.red,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          if (designer['imageUrl'] != null &&
-                              designer['imageUrl'].toString().isNotEmpty)
-                            Image.network(
-                              designer['imageUrl'].toString(),
-                              height: 200,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder:
-                                  (context, error, stackTrace) =>
-                                  Container(
-                                    height: 200,
-                                    color: Colors.grey[200],
-                                    child: const Icon(Icons.broken_image),
-                                  ),
-                            ),
-                          const SizedBox(height: 12),
-                          Text(
-                            designer['about'] ?? 'No description',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Contact Information:',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Address: ${designer['address'] ?? 'Not specified'}',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                          Text(
-                            'Location: ${designer['location'] ?? 'Not specified'}',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                          Text(
-                            'Email: ${designer['email'] ?? 'Not specified'}',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                          const SizedBox(height: 8),
-                          if (designer['phoneNumbers'] != null &&
-                              (designer['phoneNumbers'] as List)
-                                  .isNotEmpty)
-                            Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Phone Numbers:',
-                                  style: TextStyle(fontSize: 14),
-                                ),
-                                ...(designer['phoneNumbers'] as List)
-                                    .map((phone) => Text(
-                                  '• $phone',
-                                  style: const TextStyle(
-                                      fontSize: 14),
-                                ))
-                                    .toList(),
-                              ],
-                            ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Services:',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                            designer['services'] ?? 'Not specified',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                          const SizedBox(height: 12),
-                          if (designer['projects'] != null &&
-                              (designer['projects'] as List).isNotEmpty)
-                            Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Projects:',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                ...(designer['projects'] as List)
-                                    .map((project) => Padding(
-                                  padding:
-                                  const EdgeInsets.only(
-                                      top: 8),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment
-                                        .start,
-                                    children: [
-                                      Text(
-                                        project['title'] ??
-                                            'No Title',
-                                        style:
-                                        const TextStyle(
-                                          fontWeight:
-                                          FontWeight.bold,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${project['category']} • ${project['year']} • ${NumberFormat.currency(symbol: 'Rs. ', decimalDigits: 2).format(project['price'] ?? 0)}',
-                                        style:
-                                        const TextStyle(
-                                            fontSize: 14),
-                                      ),
-                                      Text(
-                                        'Client: ${project['client'] ?? 'Not specified'}',
-                                        style:
-                                        const TextStyle(
-                                            fontSize: 14),
-                                      ),
-                                      Text(
-                                        project[
-                                        'description'] ??
-                                            'No description',
-                                        style:
-                                        const TextStyle(
-                                            fontSize: 14),
-                                      ),
-                                      if (project['imageUrl'] !=
-                                          null &&
-                                          (project['imageUrl']
-                                          as List)
-                                              .isNotEmpty)
-                                        SizedBox(
-                                          height: 100,
-                                          child:
-                                          ListView.builder(
-                                            scrollDirection:
-                                            Axis.horizontal,
-                                            itemCount: (project[
-                                            'imageUrl']
-                                            as List)
-                                                .length,
-                                            itemBuilder:
-                                                (context,
-                                                index) {
-                                              final image = (project['imageUrl']
-                                              as List)[
-                                              index]
-                                                  ?.toString();
-                                              return Padding(
-                                                padding:
-                                                const EdgeInsets
-                                                    .only(
-                                                    right:
-                                                    8),
-                                                child: image !=
-                                                    null
-                                                    ? Image
-                                                    .network(
-                                                  image,
-                                                  height:
-                                                  100,
-                                                  width:
-                                                  100,
-                                                  fit: BoxFit
-                                                      .cover,
-                                                  errorBuilder: (context,
-                                                      error,
-                                                      stackTrace) =>
-                                                      Container(
-                                                        width:
-                                                        100,
-                                                        color:
-                                                        Colors.grey[200],
-                                                        child:
-                                                        const Icon(Icons.broken_image),
-                                                      ),
-                                                )
-                                                    : Container(
-                                                  width:
-                                                  100,
-                                                  color:
-                                                  Colors.grey[200],
-                                                  child:
-                                                  const Icon(Icons.broken_image),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ))
-                                    .toList(),
-                              ],
-                            ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              const Icon(Icons.star,
-                                  color: Colors.amber, size: 16),
-                              Text(
-                                ' ${designer['rating']?.toStringAsFixed(1) ?? '0.0'} (${designer['reviewCount'] ?? 0} reviews)',
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.delete,
-                                    color: Colors.red),
+                                icon: const Icon(Icons.edit, color: Colors.blue),
                                 onPressed: () =>
-                                    _deleteDesigner(designer['id']),
+                                    _updateProduct(product['id'], product),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _deleteProduct(product['id']),
                               ),
                             ],
                           ),
@@ -1461,35 +711,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   @override
   void dispose() {
-    // Dispose decoration item controllers
+    // Dispose product controllers
     _nameController.dispose();
     _priceController.dispose();
     _descriptionController.dispose();
     _categoryController.dispose();
     _quantityController.dispose();
     _imageUrlController.dispose();
-    _categoryImageController.dispose();
-    _subImageController.dispose();
-
-    // Dispose designer controllers
-    _designerNameController.dispose();
-    _designerAboutController.dispose();
-    _designerAddressController.dispose();
-    _designerEmailController.dispose();
-    _designerImageUrlController.dispose();
-    _designerLocationController.dispose();
-    _designerServicesController.dispose();
-    _designerPhoneController.dispose();
-    _designerProjectTitleController.dispose();
-    _designerProjectCategoryController.dispose();
-    _designerProjectClientController.dispose();
-    _designerProjectDescriptionController.dispose();
-    _designerProjectLocationController.dispose();
-    _designerProjectPriceController.dispose();
-    _designerProjectYearController.dispose();
-    _designerProjectRatingController.dispose();
-    _designerProjectReviewCountController.dispose();
-    _designerProjectImageUrlController.dispose();
+    _discountPriceController.dispose();
+    _updateQuantityController.dispose();
+    _updateDiscountPriceController.dispose();
 
     super.dispose();
   }

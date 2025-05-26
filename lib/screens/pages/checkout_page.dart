@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:heavenly_homes/services/stripe_services.dart';
 import '../../model/cart_items.dart';
 import 'order_processing_page.dart';
@@ -39,6 +41,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   final TextEditingController _addressController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isPlacingOrder = false;
+  bool _isLoadingLocation = false;
 
   @override
   void dispose() {
@@ -46,16 +49,77 @@ class _CheckoutPageState extends State<CheckoutPage> {
     super.dispose();
   }
 
+  // --- Check and Request Location Permissions ---
+  Future<bool> _checkAndRequestLocationPermission() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location permission denied')),
+        );
+        return false;
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Location permission permanently denied')),
+      );
+      return false;
+    }
+    return true;
+  }
+
+  // --- Fetch Current Location ---
+  Future<void> _fetchCurrentLocation() async {
+    setState(() {
+      _isLoadingLocation = true;
+    });
+
+    try {
+      bool hasPermission = await _checkAndRequestLocationPermission();
+      if (!hasPermission) return;
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        Placemark placemark = placemarks.first;
+        String address = [
+          placemark.street,
+          placemark.locality,
+          placemark.administrativeArea,
+          placemark.country,
+        ].where((element) => element != null && element.isNotEmpty).join(', ');
+
+        setState(() {
+          _addressController.text = address;
+          _isLoadingLocation = false;
+        });
+      } else {
+        throw Exception('No address found for the current location');
+      }
+    } catch (e) {
+      setState(() {
+        _isLoadingLocation = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to fetch location: $e')),
+      );
+    }
+  }
+
   // --- Handle Stripe Payment ---
   Future<void> _handleStripePayment(double totalAmount) async {
     try {
-      // For LKR, Stripe expects the amount in cents (multiply by 100)
       final amountInCents = (totalAmount * 100).toInt().toString();
-
-      // Create Payment Intent using the function from stripe_services.dart
       final paymentIntentData = await createPaymentIntent(amountInCents, 'LKR');
-
-      // Initialize the Payment Sheet (Google Pay enabled for Android)
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: paymentIntentData['client_secret'],
@@ -63,17 +127,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
           googlePay: const PaymentSheetGooglePay(
             merchantCountryCode: 'LK',
             currencyCode: 'LKR',
-            testEnv: true, // Set to false in production
+            testEnv: true,
           ),
         ),
       );
-
-      // Present the Payment Sheet
       await Stripe.instance.presentPaymentSheet();
-
-      // If payment is successful, save the order
       await _saveOrderAndNavigate(totalAmount);
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -185,14 +244,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
       final double totalAmount = widget.subtotal + widget.deliveryCharges;
 
       if (_selectedPaymentMethod == 'Card Details') {
-        // Handle Stripe Payment
         await _handleStripePayment(totalAmount);
       } else {
-        // Handle Cash on Delivery
         await _saveOrderAndNavigate(totalAmount);
       }
     } catch (e) {
-      //print("Error placing order: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -207,7 +263,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     }
   }
 
-  // --- Helper: Payment Option (UI Styled) ---
+  // --- Helper: Payment Option ---
   Widget _buildPaymentOption(String title, IconData icon, {TextStyle? textStyle, bool isEnabled = true}) {
     bool isSelected = _selectedPaymentMethod == title;
     Color effectiveColor = isEnabled ? kDarkGrey : Colors.grey;
@@ -272,7 +328,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  // --- HELPER: Summary Row (UI Styled) ---
+  // --- Helper: Summary Row ---
   Widget _buildSummaryRow(String label, String value, {bool isBold = false, TextStyle? textStyle, Color? valueColor}) {
     final effectiveTextStyle = textStyle ??
         TextStyle(
@@ -305,7 +361,86 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  // --- BUILD METHOD ---
+  // --- Build Address Section ---
+  Widget _buildAddressSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Address',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w500,
+                fontSize: 16,
+                height: 1.0,
+                letterSpacing: -0.02 * 16,
+                color: kBlack,
+              ),
+            ),
+            TextButton(
+              onPressed: _isLoadingLocation ? null : _fetchCurrentLocation,
+              child: Text(
+                _isLoadingLocation ? 'Loading...' : 'Use Current Location',
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 14,
+                  color: kDarkGrey,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          constraints: const BoxConstraints(minHeight: 52),
+          padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 8.0),
+          decoration: BoxDecoration(
+            color: kWhite,
+            borderRadius: BorderRadius.circular(20.0),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withValues(alpha: 0.1),
+                spreadRadius: 1,
+                blurRadius: 3,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: TextFormField(
+            controller: _addressController,
+            decoration: InputDecoration(
+              hintText: 'Enter your delivery address',
+              hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 14, color: Colors.grey[400]),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              errorBorder: InputBorder.none,
+              focusedErrorBorder: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 4.0),
+              isDense: true,
+            ),
+            style: const TextStyle(fontFamily: 'Poppins', fontSize: 15, color: kBlack),
+            maxLines: 2,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Please enter a delivery address';
+              }
+              if (value.trim().length < 10) {
+                return 'Address seems too short';
+              }
+              return null;
+            },
+            textCapitalization: TextCapitalization.words,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- Build Method ---
   @override
   Widget build(BuildContext context) {
     final double displayTotalAmount = widget.subtotal + widget.deliveryCharges;
@@ -345,66 +480,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // --- Address Section ---
-                Container(
-                  constraints: const BoxConstraints(minHeight: 52),
-                  padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 8.0),
-                  decoration: BoxDecoration(
-                    color: kWhite,
-                    borderRadius: BorderRadius.circular(20.0),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withValues(alpha: 0.1),
-                        spreadRadius: 1,
-                        blurRadius: 3,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Address',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w500,
-                          fontSize: 16,
-                          height: 1.0,
-                          letterSpacing: -0.02 * 16,
-                          color: kBlack,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      TextFormField(
-                        controller: _addressController,
-                        decoration: InputDecoration(
-                          hintText: 'Enter your delivery address',
-                          hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 14, color: Colors.grey[400]),
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          errorBorder: InputBorder.none,
-                          focusedErrorBorder: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 4.0),
-                          isDense: true,
-                        ),
-                        style: const TextStyle(fontFamily: 'Poppins', fontSize: 15, color: kBlack),
-                        maxLines: 2,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Please enter a delivery address';
-                          }
-                          if (value.trim().length < 10) {
-                            return 'Address seems too short';
-                          }
-                          return null;
-                        },
-                        textCapitalization: TextCapitalization.words,
-                      ),
-                    ],
-                  ),
-                ),
+                _buildAddressSection(),
                 const SizedBox(height: 24),
                 // --- Payment Method Section ---
                 const Text(
@@ -468,7 +544,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           padding: const EdgeInsets.only(bottom: 8.0),
                           child: _buildSummaryRow(
                             '${item.name} (x${item.quantity})',
-                            'Rs ${itemTotal.toStringAsFixed(2)}', // Show with 2 decimal places
+                            'Rs ${itemTotal.toStringAsFixed(2)}',
                             textStyle: const TextStyle(
                               fontFamily: 'Lato',
                               fontWeight: FontWeight.w400,
@@ -482,7 +558,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       }),
                       _buildSummaryRow(
                         'Delivery Charge',
-                        'Rs ${widget.deliveryCharges.toStringAsFixed(2)}', // Show with 2 decimal places
+                        'Rs ${widget.deliveryCharges.toStringAsFixed(2)}',
                         textStyle: const TextStyle(
                           fontFamily: 'Lato',
                           fontWeight: FontWeight.w400,

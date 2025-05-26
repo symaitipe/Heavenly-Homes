@@ -63,22 +63,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
             return _buildEmptyState();
           }
 
+          final orders = snapshot.data!.docs.map((doc) => OrderModel.fromFirestore(doc)).toList();
+
           return FutureBuilder<List<OrderModel>>(
-            future: Future.wait(snapshot.data!.docs.map((doc) async {
-              try {
-                return await OrderModel.fromFirestore(doc);
-              } catch (e) {
-                return OrderModel(
-                  orderId: doc.id,
-                  userId: _currentUserId!,
-                  createdAt: Timestamp.now(),
-                  totalAmount: 0.0,
-                  deliveryAddress: 'N/A',
-                  paymentMethod: 'N/A',
-                  items: [],
-                );
-              }
-            }).toList()),
+            future: Future.wait(orders),
             builder: (context, orderSnapshot) {
               if (orderSnapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -90,7 +78,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 return _buildEmptyState();
               }
 
-              final orders = orderSnapshot.data!;
+              final orderList = orderSnapshot.data!;
 
               return RefreshIndicator(
                 onRefresh: () async {
@@ -98,10 +86,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 },
                 child: ListView.separated(
                   padding: const EdgeInsets.all(16),
-                  itemCount: orders.length,
+                  itemCount: orderList.length,
                   separatorBuilder: (context, index) => const SizedBox(height: 16),
                   itemBuilder: (context, index) {
-                    final order = orders[index];
+                    final order = orderList[index];
                     return _buildOrderCard(order, context);
                   },
                 ),
@@ -319,6 +307,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
               _buildDetailRow('Total', 'Rs ${order.totalAmount.toStringAsFixed(2)}'),
               _buildDetailRow('Payment Method', order.paymentMethod),
               _buildDetailRow('Delivery Address', order.deliveryAddress),
+              _buildDetailRow('Status', order.status), // Display current status
               const SizedBox(height: 16),
               const Divider(color: AppConstants.grey200),
               const SizedBox(height: 8),
