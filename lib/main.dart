@@ -1,9 +1,9 @@
-
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // Required for kIsWeb
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:heavenly_homes/constants/service_constants.dart';
+import 'package:heavenly_homes/screens/authenticates/designer_login.dart';
 import 'package:heavenly_homes/screens/authenticates/login.dart';
 import 'package:heavenly_homes/screens/authenticates/sellerlogin.dart';
 import 'package:heavenly_homes/screens/pages/best_bids.dart';
@@ -18,14 +18,14 @@ import 'package:heavenly_homes/screens/splashes/intro.dart';
 import 'package:heavenly_homes/screens/splashes/splash_screen.dart';
 import 'package:heavenly_homes/screens/pages/account.dart';
 import 'package:heavenly_homes/screens/pages/admin_dashboard.dart';
-
-import 'model/decoration_items.dart';
-import 'model/designer.dart';
+import 'package:heavenly_homes/screens/pages/designer_dashboard.dart'; // Ensure this is correct
+import 'package:heavenly_homes/model/decoration_items.dart';
+import 'package:heavenly_homes/model/designer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
-    options: FirebaseOptions(
+    options: const FirebaseOptions(
       apiKey: "AIzaSyANrw-mS5r1_0OQJF1FqP0mQki-1NiOjyc",
       appId: "1:194849413888:android:ad3b35a1e1a6de67dd31e5",
       messagingSenderId: "194849413888",
@@ -33,7 +33,6 @@ void main() async {
     ),
   );
 
-// Initialize Stripe only for mobile platforms
   if (!kIsWeb) {
     Stripe.publishableKey = ServiceConstants.publishableKey;
     await Stripe.instance.applySettings();
@@ -62,6 +61,7 @@ class MyApp extends StatelessWidget {
         '/intro': (context) => const IntroPage(),
         '/login': (context) => const LoginPage(),
         '/adminlogin': (context) => const AdminLoginPage(),
+        '/designerlogin': (context) => const DesignerLoginPage(),
         '/home': (context) => const HomePage(),
         '/contact_designer': (context) => const ContactDesignerPage(),
         '/category_selection': (context) => const CategorySelectionPage(),
@@ -94,11 +94,9 @@ class MyApp extends StatelessWidget {
           if (arguments is Designer) {
             return ChatPage(designer: arguments);
           }
-          return Scaffold(
-              appBar: AppBar(),
-              body: const Center(child: Text("Error loading chat."))
-          );
+          return Scaffold(appBar: AppBar(), body: const Center(child: Text("Error loading chat.")));
         },
+        '/designer-dashboard': (context) => const DesignerDashboard(), // No arguments needed
       },
       onUnknownRoute: (settings) {
         return MaterialPageRoute(builder: (_) => const UndefinedRouteScreen());

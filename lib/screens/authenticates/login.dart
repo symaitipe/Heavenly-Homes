@@ -65,6 +65,12 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  void _navigateToDesignerLogin() {
+    if (mounted) {
+      Navigator.pushNamed(context, '/designerlogin');
+    }
+  }
+
   void _showError(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -164,7 +170,8 @@ class _LoginPageState extends State<LoginPage> {
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment(-0.5, -0.8), end: Alignment(0.5, 0.8),
+            begin: Alignment(-0.5, -0.8),
+            end: Alignment(0.5, 0.8),
             colors: [Color(0xFF000000), Color(0xFF1E1E1E), Color(0xFF232323)],
             stops: [0.0, 0.5, 1.0],
           ),
@@ -191,7 +198,8 @@ class _LoginPageState extends State<LoginPage> {
         children: [
           const SizedBox(height: 60),
           Container(
-            width: 85, height: 85,
+            width: 85,
+            height: 85,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(100),
               image: const DecorationImage(
@@ -212,11 +220,15 @@ class _LoginPageState extends State<LoginPage> {
                   setState(() => _showSignUpForm = true);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black, foregroundColor: Colors.white,
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   side: const BorderSide(color: Colors.white, width: 0.5),
                 ),
-                child: Text('Sign Up', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Sign Up',
+                  style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ),
@@ -232,10 +244,14 @@ class _LoginPageState extends State<LoginPage> {
                   setState(() => _showLoginForm = true);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white, foregroundColor: Colors.black,
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                 ),
-                child: Text('Login', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Login',
+                  style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ),
@@ -254,7 +270,32 @@ class _LoginPageState extends State<LoginPage> {
                   side: const BorderSide(color: Colors.white70, width: 0.5),
                   elevation: 0,
                 ),
-                child: Text('Seller Login', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
+                child: Text(
+                  'Seller Login',
+                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20), // Added spacing for the new button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: ElevatedButton(
+                onPressed: _navigateToDesignerLogin,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  foregroundColor: Colors.white70,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  side: const BorderSide(color: Colors.white70, width: 0.5),
+                  elevation: 0,
+                ),
+                child: Text(
+                  'Designer Login',
+                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
               ),
             ),
           ),
@@ -264,7 +305,10 @@ class _LoginPageState extends State<LoginPage> {
             child: Row(
               children: [
                 const Expanded(child: Divider(color: Colors.white, thickness: 1, endIndent: 10)),
-                Text('OR CONTINUE WITH', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w400, color: Colors.white)),
+                Text(
+                  'OR CONTINUE WITH',
+                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w400, color: Colors.white),
+                ),
                 const Expanded(child: Divider(color: Colors.white, thickness: 1, indent: 10)),
               ],
             ),
@@ -313,7 +357,12 @@ class _LoginPageState extends State<LoginPage> {
               onPressed: () => setState(() => _showLoginForm = false),
             ),
             const SizedBox(height: 20),
-            Center(child: Text('Login', style: GoogleFonts.poppins(fontSize: 40, fontWeight: FontWeight.w500, color: Colors.white))),
+            Center(
+              child: Text(
+                'Login',
+                style: GoogleFonts.poppins(fontSize: 40, fontWeight: FontWeight.w500, color: Colors.white),
+              ),
+            ),
             const SizedBox(height: 35),
             _buildTextField(
               controller: _emailController,
@@ -339,7 +388,10 @@ class _LoginPageState extends State<LoginPage> {
                 padding: const EdgeInsets.only(right: 10),
                 child: InkWell(
                   onTap: () => _showError("Forgot Password not implemented."),
-                  child: Text('Forgot password?', style: GoogleFonts.poppins(fontSize: 12, color: Colors.white70, decoration: TextDecoration.underline)),
+                  child: Text(
+                    'Forgot password?',
+                    style: GoogleFonts.poppins(fontSize: 12, color: Colors.white70, decoration: TextDecoration.underline),
+                  ),
                 ),
               ),
             ),
@@ -355,7 +407,10 @@ class _LoginPageState extends State<LoginPage> {
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
-                  child: Text('Login', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    'Login',
+                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ),
@@ -369,7 +424,10 @@ class _LoginPageState extends State<LoginPage> {
                     _showSignUpForm = true;
                   });
                 },
-                child: Text("Don't have an account? Sign Up", style: GoogleFonts.poppins(fontSize: 14, color: Colors.white70, decoration: TextDecoration.underline)),
+                child: Text(
+                  "Don't have an account? Sign Up",
+                  style: GoogleFonts.poppins(fontSize: 14, color: Colors.white70, decoration: TextDecoration.underline),
+                ),
               ),
             ),
             const SizedBox(height: 40),
@@ -392,7 +450,12 @@ class _LoginPageState extends State<LoginPage> {
               onPressed: () => setState(() => _showSignUpForm = false),
             ),
             const SizedBox(height: 20),
-            Center(child: Text('Sign Up', style: GoogleFonts.poppins(fontSize: 40, fontWeight: FontWeight.w500, color: Colors.white))),
+            Center(
+              child: Text(
+                'Sign Up',
+                style: GoogleFonts.poppins(fontSize: 40, fontWeight: FontWeight.w500, color: Colors.white),
+              ),
+            ),
             const SizedBox(height: 35),
             _buildTextField(
               controller: _firstNameController,
@@ -464,7 +527,10 @@ class _LoginPageState extends State<LoginPage> {
                     side: const BorderSide(color: Colors.white, width: 0.5),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
-                  child: Text('Create Account', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    'Create Account',
+                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ),
@@ -478,7 +544,10 @@ class _LoginPageState extends State<LoginPage> {
                     _showLoginForm = true;
                   });
                 },
-                child: Text('Already registered? Login', style: GoogleFonts.poppins(fontSize: 14, color: Colors.white70, decoration: TextDecoration.underline)),
+                child: Text(
+                  'Already registered? Login',
+                  style: GoogleFonts.poppins(fontSize: 14, color: Colors.white70, decoration: TextDecoration.underline),
+                ),
               ),
             ),
             const SizedBox(height: 40),
